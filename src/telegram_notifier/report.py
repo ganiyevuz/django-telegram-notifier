@@ -12,7 +12,7 @@ def report_exception(exc, request=None, body=None, level=None, severity=None):
     sent = notify_error_via_telegram(message)
 
     if get_setting("STORE_EXCEPTIONS"):
-        from telegram_notifier.models import ExceptionLog, Level, Severity
+        from telegram_notifier.models import ExceptionLog
 
         kwargs = {}
         if level:

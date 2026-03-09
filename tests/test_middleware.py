@@ -1,4 +1,4 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from django.test import RequestFactory
 
@@ -33,7 +33,9 @@ def test_middleware_captures_request_body(settings):
         "CHAT_IDS": ["1"],
     }
     factory = RequestFactory()
-    request = factory.post("/test", data=b'{"key": "value"}', content_type="application/json")
+    request = factory.post(
+        "/test", data=b'{"key": "value"}', content_type="application/json",
+    )
 
     middleware = GlobalExceptionReporterMiddleware(lambda r: None)
     middleware.process_request(request)

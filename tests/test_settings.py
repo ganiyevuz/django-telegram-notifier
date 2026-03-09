@@ -1,6 +1,6 @@
 import pytest
 
-from telegram_notifier.settings import get_setting, DEFAULTS
+from telegram_notifier.settings import DEFAULTS, get_setting
 
 
 def test_get_setting_returns_configured_value(settings):

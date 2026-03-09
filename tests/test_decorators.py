@@ -1,4 +1,3 @@
-import functools
 from unittest.mock import patch
 
 import pytest
@@ -16,9 +15,11 @@ def test_decorator_reports_and_reraises(settings):
     def failing_function():
         raise ValueError("boom")
 
-    with patch("telegram_notifier.decorators.report_exception") as mock_report:
-        with pytest.raises(ValueError, match="boom"):
-            failing_function()
+    with (
+        patch("telegram_notifier.decorators.report_exception") as mock_report,
+        pytest.raises(ValueError, match="boom"),
+    ):
+        failing_function()
 
     mock_report.assert_called_once()
 

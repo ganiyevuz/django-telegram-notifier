@@ -68,7 +68,9 @@ class ExceptionLog(Model):
     traceback = TextField()
     level = CharField(max_length=10, choices=Level.choices, default=Level.ERROR)
     severity = CharField(max_length=10, choices=Severity.choices, default=Severity.HIGH)
-    status = CharField(max_length=10, choices=Status.choices, default=Status.NEW, db_index=True)
+    status = CharField(
+        max_length=10, choices=Status.choices, default=Status.NEW, db_index=True,
+    )
 
     path = CharField(max_length=500, blank=True)
     method = CharField(max_length=10, blank=True)
@@ -92,7 +94,9 @@ class ExceptionLog(Model):
         return f"{self.exception_class}: {self.message[:50]}"
 
     @classmethod
-    def create_from_exception(cls, exc, request=None, body=None, level=Level.ERROR, severity=Severity.HIGH):
+    def create_from_exception(
+        cls, exc, request=None, body=None, level=Level.ERROR, severity=Severity.HIGH,
+    ):
         from telegram_notifier.settings import get_setting
 
         tb_string = "".join(traceback.format_exception(exc))

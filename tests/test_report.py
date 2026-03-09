@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 from telegram_notifier.models import ExceptionLog
 from telegram_notifier.report import report_exception
@@ -49,7 +50,9 @@ def test_report_marks_is_sent_false_on_failure(settings):
         "STORE_EXCEPTIONS": True,
     }
 
-    with patch("telegram_notifier.report.notify_error_via_telegram", return_value=False):
+    with patch(
+        "telegram_notifier.report.notify_error_via_telegram", return_value=False,
+    ):
         try:
             raise ValueError("test")
         except ValueError as exc:

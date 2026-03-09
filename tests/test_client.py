@@ -1,4 +1,4 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from telegram_notifier.client import notify_error_via_telegram
 
@@ -11,7 +11,9 @@ def test_sends_message_to_all_chat_ids(settings):
     mock_response = MagicMock()
     mock_response.status_code = 200
 
-    with patch("telegram_notifier.client.httpx.post", return_value=mock_response) as mock_post:
+    with patch(
+        "telegram_notifier.client.httpx.post", return_value=mock_response,
+    ) as mock_post:
         result = notify_error_via_telegram("test error")
 
     assert mock_post.call_count == 2
@@ -23,7 +25,10 @@ def test_returns_false_on_failure(settings):
         "BOT_TOKEN": "fake-token",
         "CHAT_IDS": ["111"],
     }
-    with patch("telegram_notifier.client.httpx.post", side_effect=Exception("network error")):
+    with patch(
+        "telegram_notifier.client.httpx.post",
+        side_effect=Exception("network error"),
+    ):
         result = notify_error_via_telegram("test error")
 
     assert result is False
