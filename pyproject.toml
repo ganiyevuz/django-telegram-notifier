@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "django-package-template"
+name = "django-telegram-notifier"
 version = "0.1.0"
-description = "A modern, production-ready template for building reusable Django packages"
+description = "Catch Django exceptions and send formatted error reports to Telegram with optional database logging"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
@@ -16,15 +16,19 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Framework :: Django",
     "Framework :: Django :: 5.2",
+    "Framework :: Django :: 6.0",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
 ]
-keywords = ["django", "template", "package", "boilerplate", "reusable", "plugin"]
+keywords = ["django", "telegram", "exception", "error", "notification", "monitoring"]
 
-dependencies = ["django>=5.2"]
+dependencies = [
+    "django>=5.2",
+    "httpx>=0.28.1",
+]
 
 [dependency-groups]
 dev = [
@@ -35,7 +39,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src"]
+packages = ["src/telegram_notifier"]
 
 [tool.ruff]
 target-version = "py311"
@@ -53,8 +57,9 @@ select = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["src"]
+known-first-party = ["telegram_notifier"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
+DJANGO_SETTINGS_MODULE = "tests.settings"
