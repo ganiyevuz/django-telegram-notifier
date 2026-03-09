@@ -1,0 +1,65 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - "v*"
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+        django-version: ["5.2", "6.0"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Setup Python
+        env:
+          PYTHON_VERSION: "${{ matrix.python-version }}"
+        run: uv python install "$PYTHON_VERSION"
+
+      - name: Install dependencies
+        env:
+          DJANGO_VERSION: "${{ matrix.django-version }}"
+        run: |
+          uv sync --group dev
+          uv pip install "Django~=${DJANGO_VERSION}.0"
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Test
+        run: uv run pytest --cov
+
+  publish:
+    name: Publish to PyPI
+    needs: test
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    environment: pypi
+    permissions:
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Build
+        run: uv build
+
+      - name: Publish
+        run: uv publish --trusted-publishing always
