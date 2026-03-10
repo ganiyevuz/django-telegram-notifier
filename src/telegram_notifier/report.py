@@ -1,7 +1,7 @@
 import logging
 
 from telegram_notifier.client import notify_error_via_telegram
-from telegram_notifier.message import build_exception_message
+from telegram_notifier.message import build_exception_message, build_traceback_content
 from telegram_notifier.settings import get_setting
 
 logger = logging.getLogger("telegram_notifier")
@@ -11,7 +11,8 @@ def report_exception(exc, request=None, body=None, level=None, severity=None):
     message = build_exception_message(
         exc, request=request, body=body, level=level or "error",
     )
-    sent = notify_error_via_telegram(message)
+    traceback_content = build_traceback_content(exc)
+    sent = notify_error_via_telegram(message, traceback_content=traceback_content)
 
     if get_setting("STORE_EXCEPTIONS"):
         from telegram_notifier.models import ExceptionLog

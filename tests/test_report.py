@@ -8,11 +8,7 @@ from telegram_notifier.report import report_exception
 
 @pytest.mark.django_db
 def test_report_sends_telegram_and_stores_when_enabled(settings):
-    settings.TELEGRAM_NOTIFIER = {
-        "BOT_TOKEN": "fake",
-        "CHAT_IDS": ["1"],
-        "STORE_EXCEPTIONS": True,
-    }
+    settings.TELEGRAM_NOTIFIER = {**settings.TELEGRAM_NOTIFIER, "STORE_EXCEPTIONS": True}
 
     with patch("telegram_notifier.report.notify_error_via_telegram", return_value=True):
         try:
@@ -26,13 +22,7 @@ def test_report_sends_telegram_and_stores_when_enabled(settings):
 
 
 @pytest.mark.django_db
-def test_report_sends_telegram_without_storing(settings):
-    settings.TELEGRAM_NOTIFIER = {
-        "BOT_TOKEN": "fake",
-        "CHAT_IDS": ["1"],
-        "STORE_EXCEPTIONS": False,
-    }
-
+def test_report_sends_telegram_without_storing():
     with patch("telegram_notifier.report.notify_error_via_telegram", return_value=True):
         try:
             raise ValueError("test")
@@ -44,11 +34,7 @@ def test_report_sends_telegram_without_storing(settings):
 
 @pytest.mark.django_db
 def test_report_marks_is_sent_false_on_failure(settings):
-    settings.TELEGRAM_NOTIFIER = {
-        "BOT_TOKEN": "fake",
-        "CHAT_IDS": ["1"],
-        "STORE_EXCEPTIONS": True,
-    }
+    settings.TELEGRAM_NOTIFIER = {**settings.TELEGRAM_NOTIFIER, "STORE_EXCEPTIONS": True}
 
     with patch(
         "telegram_notifier.report.notify_error_via_telegram", return_value=False,
@@ -60,3 +46,17 @@ def test_report_marks_is_sent_false_on_failure(settings):
 
     log = ExceptionLog.objects.first()
     assert log.is_sent is False
+
+
+@pytest.mark.django_db
+def test_report_passes_traceback_content():
+    with patch("telegram_notifier.report.notify_error_via_telegram", return_value=True) as mock_notify:
+        try:
+            raise ValueError("test")
+        except ValueError as exc:
+            report_exception(exc)
+
+    call_kwargs = mock_notify.call_args
+    traceback_content = call_kwargs[1].get("traceback_content") or call_kwargs[0][1]
+    assert "ValueError: test" in traceback_content
+    assert "Traceback (most recent call last)" in traceback_content
