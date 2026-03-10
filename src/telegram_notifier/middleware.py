@@ -1,15 +1,13 @@
-from django.utils.deprecation import MiddlewareMixin
-
 from telegram_notifier.report import report_exception
 
 
-class GlobalExceptionReporterMiddleware(MiddlewareMixin):
+class GlobalExceptionReporterMiddleware:
     def __init__(self, get_response):
-        super().__init__(get_response)
-        self._body = None
+        self.get_response = get_response
 
-    def process_request(self, request):
+    def __call__(self, request):
         self._body = getattr(request, "body", b"")
+        return self.get_response(request)
 
     def process_exception(self, request, exception):
         report_exception(exception, request, self._body)

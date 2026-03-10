@@ -14,7 +14,7 @@ def test_middleware_calls_report_on_exception(settings):
     request = factory.get("/test")
 
     middleware = GlobalExceptionReporterMiddleware(lambda r: None)
-    middleware.process_request(request)
+    middleware(request)
 
     exc = ValueError("boom")
 
@@ -38,7 +38,7 @@ def test_middleware_captures_request_body(settings):
     )
 
     middleware = GlobalExceptionReporterMiddleware(lambda r: None)
-    middleware.process_request(request)
+    middleware(request)
 
     with patch("telegram_notifier.middleware.report_exception") as mock_report:
         middleware.process_exception(request, ValueError("fail"))
