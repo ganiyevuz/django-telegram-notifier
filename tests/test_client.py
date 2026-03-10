@@ -20,11 +20,7 @@ def test_sends_message_to_all_chat_ids(settings):
     assert result is True
 
 
-def test_returns_false_on_failure(settings):
-    settings.TELEGRAM_NOTIFIER = {
-        "BOT_TOKEN": "fake-token",
-        "CHAT_IDS": ["111"],
-    }
+def test_returns_false_on_failure():
     with patch(
         "telegram_notifier.client.httpx.post",
         side_effect=Exception("network error"),
@@ -53,3 +49,40 @@ def test_uses_proxy_when_configured(settings):
         notify_error_via_telegram("test error")
 
     mock_httpx.Client.assert_called_once_with(proxy="http://proxy:8080")
+
+
+def test_sends_traceback_file(settings):
+    settings.TELEGRAM_NOTIFIER = {
+        "BOT_TOKEN": "fake-token",
+        "CHAT_IDS": ["111"],
+    }
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+
+    with patch(
+        "telegram_notifier.client.httpx.post", return_value=mock_response,
+    ) as mock_post:
+        notify_error_via_telegram("test error", traceback_content="ValueError: boom")
+
+    assert mock_post.call_count == 2
+    # Second call should be sendDocument
+    second_call = mock_post.call_args_list[1]
+    assert "sendDocument" in second_call[0][0]
+    assert second_call[1]["data"]["chat_id"] == "111"
+
+
+def test_sends_traceback_file_to_all_chats(settings):
+    settings.TELEGRAM_NOTIFIER = {
+        "BOT_TOKEN": "fake-token",
+        "CHAT_IDS": ["111", "222"],
+    }
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+
+    with patch(
+        "telegram_notifier.client.httpx.post", return_value=mock_response,
+    ) as mock_post:
+        notify_error_via_telegram("test error", traceback_content="ValueError: boom")
+
+    # 2 chats x 2 calls each (message + file) = 4
+    assert mock_post.call_count == 4
