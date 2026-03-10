@@ -36,6 +36,7 @@ dev = [
     "pytest-asyncio>=1.3.0",
     "pytest-cov>=6.1.1",
     "pytest-django>=4.11.1",
+    "pytest-dotenv>=0.5.2",
     "ruff>=0.9.0",
 ]
 
@@ -65,3 +66,4 @@ known-first-party = ["telegram_notifier"]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 DJANGO_SETTINGS_MODULE = "tests.settings"
+env_files = [".env"]

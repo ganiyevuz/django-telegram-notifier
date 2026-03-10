@@ -8,12 +8,7 @@ from telegram_notifier.models import ExceptionLog
 
 
 @pytest.mark.django_db
-def test_cleanup_deletes_old_exceptions(settings):
-    settings.TELEGRAM_NOTIFIER = {
-        "BOT_TOKEN": "fake",
-        "CHAT_IDS": ["1"],
-        "CLEANUP_DAYS": 30,
-    }
+def test_cleanup_deletes_old_exceptions():
     old = ExceptionLog.objects.create(
         exception_class="OldError",
         message="old",
@@ -35,12 +30,7 @@ def test_cleanup_deletes_old_exceptions(settings):
 
 
 @pytest.mark.django_db
-def test_cleanup_respects_days_argument(settings):
-    settings.TELEGRAM_NOTIFIER = {
-        "BOT_TOKEN": "fake",
-        "CHAT_IDS": ["1"],
-        "CLEANUP_DAYS": 30,
-    }
+def test_cleanup_respects_days_argument():
     log = ExceptionLog.objects.create(
         exception_class="Error",
         message="test",

@@ -6,11 +6,7 @@ from django.test import RequestFactory
 from telegram_notifier.middleware import GlobalExceptionReporterMiddleware
 
 
-def test_middleware_calls_report_on_exception(settings):
-    settings.TELEGRAM_NOTIFIER = {
-        "BOT_TOKEN": "fake",
-        "CHAT_IDS": ["1"],
-    }
+def test_middleware_calls_report_on_exception():
     factory = RequestFactory()
     request = factory.get("/test")
 
@@ -28,11 +24,7 @@ def test_middleware_calls_report_on_exception(settings):
     assert args[0][1] is request
 
 
-def test_middleware_captures_request_body(settings):
-    settings.TELEGRAM_NOTIFIER = {
-        "BOT_TOKEN": "fake",
-        "CHAT_IDS": ["1"],
-    }
+def test_middleware_captures_request_body():
     factory = RequestFactory()
     request = factory.post(
         "/test", data=b'{"key": "value"}', content_type="application/json",
@@ -48,11 +40,7 @@ def test_middleware_captures_request_body(settings):
     assert body_arg is not None
 
 
-def test_middleware_body_is_per_request(settings):
-    settings.TELEGRAM_NOTIFIER = {
-        "BOT_TOKEN": "fake",
-        "CHAT_IDS": ["1"],
-    }
+def test_middleware_body_is_per_request():
     factory = RequestFactory()
     request_a = factory.post(
         "/a", data=b'{"a": 1}', content_type="application/json",
@@ -73,11 +61,7 @@ def test_middleware_body_is_per_request(settings):
 
 
 @pytest.mark.asyncio
-async def test_middleware_async(settings):
-    settings.TELEGRAM_NOTIFIER = {
-        "BOT_TOKEN": "fake",
-        "CHAT_IDS": ["1"],
-    }
+async def test_middleware_async():
     factory = RequestFactory()
     request = factory.get("/test")
 

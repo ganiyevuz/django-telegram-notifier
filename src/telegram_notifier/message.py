@@ -55,10 +55,13 @@ def build_exception_message(exc, request=None, body=None, level="error"):
         if body_str != "{}":
             request_lines.append(f"<b>Body:</b>\n<pre>{body_str}</pre>")
 
-        if hasattr(request, "user") and request.user.is_authenticated:
-            request_lines.append(
-                f"<b>User:</b> <code>{html.escape(str(request.user))}</code>",
-            )
+        try:
+            if hasattr(request, "user") and request.user.is_authenticated:
+                request_lines.append(
+                    f"<b>User:</b> <code>{html.escape(str(request.user))}</code>",
+                )
+        except Exception:
+            pass
 
         request_lines.append("</blockquote>")
         parts.extend(request_lines)

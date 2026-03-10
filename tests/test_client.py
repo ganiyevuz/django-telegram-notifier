@@ -51,7 +51,7 @@ def test_uses_proxy_when_configured(settings):
     mock_httpx.Client.assert_called_once_with(proxy="http://proxy:8080")
 
 
-def test_sends_traceback_file(settings):
+def test_sends_document_with_caption(settings):
     settings.TELEGRAM_NOTIFIER = {
         "BOT_TOKEN": "fake-token",
         "CHAT_IDS": ["111"],
@@ -64,14 +64,16 @@ def test_sends_traceback_file(settings):
     ) as mock_post:
         notify_error_via_telegram("test error", traceback_content="ValueError: boom")
 
-    assert mock_post.call_count == 2
-    # Second call should be sendDocument
-    second_call = mock_post.call_args_list[1]
-    assert "sendDocument" in second_call[0][0]
-    assert second_call[1]["data"]["chat_id"] == "111"
+    assert mock_post.call_count == 1
+    call = mock_post.call_args
+    assert "sendDocument" in call[0][0]
+    assert call[1]["data"]["chat_id"] == "111"
+    assert call[1]["data"]["caption"] == "test error"
+    assert call[1]["data"]["parse_mode"] == "HTML"
+    assert "document" in call[1]["files"]
 
 
-def test_sends_traceback_file_to_all_chats(settings):
+def test_sends_document_to_all_chats(settings):
     settings.TELEGRAM_NOTIFIER = {
         "BOT_TOKEN": "fake-token",
         "CHAT_IDS": ["111", "222"],
@@ -84,5 +86,5 @@ def test_sends_traceback_file_to_all_chats(settings):
     ) as mock_post:
         notify_error_via_telegram("test error", traceback_content="ValueError: boom")
 
-    # 2 chats x 2 calls each (message + file) = 4
-    assert mock_post.call_count == 4
+    # 2 chats x 1 call each (document with caption)
+    assert mock_post.call_count == 2

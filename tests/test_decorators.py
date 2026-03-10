@@ -6,12 +6,7 @@ import pytest
 from telegram_notifier.decorators import telegram_exception_notifier
 
 
-def test_decorator_reports_and_reraises(settings):
-    settings.TELEGRAM_NOTIFIER = {
-        "BOT_TOKEN": "fake",
-        "CHAT_IDS": ["1"],
-    }
-
+def test_decorator_reports_and_reraises():
     @telegram_exception_notifier
     def failing_function():
         raise ValueError("boom")
@@ -25,12 +20,7 @@ def test_decorator_reports_and_reraises(settings):
     mock_report.assert_called_once()
 
 
-def test_decorator_returns_value_on_success(settings):
-    settings.TELEGRAM_NOTIFIER = {
-        "BOT_TOKEN": "fake",
-        "CHAT_IDS": ["1"],
-    }
-
+def test_decorator_returns_value_on_success():
     @telegram_exception_notifier
     def good_function():
         return 42
@@ -49,12 +39,7 @@ def test_decorator_preserves_function_metadata():
 
 
 @pytest.mark.asyncio
-async def test_async_decorator_reports_and_reraises(settings):
-    settings.TELEGRAM_NOTIFIER = {
-        "BOT_TOKEN": "fake",
-        "CHAT_IDS": ["1"],
-    }
-
+async def test_async_decorator_reports_and_reraises():
     @telegram_exception_notifier
     async def async_failing():
         raise ValueError("async boom")
@@ -69,12 +54,7 @@ async def test_async_decorator_reports_and_reraises(settings):
 
 
 @pytest.mark.asyncio
-async def test_async_decorator_returns_value(settings):
-    settings.TELEGRAM_NOTIFIER = {
-        "BOT_TOKEN": "fake",
-        "CHAT_IDS": ["1"],
-    }
-
+async def test_async_decorator_returns_value():
     @telegram_exception_notifier
     async def async_good():
         return 99
