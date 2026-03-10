@@ -13,7 +13,11 @@ from django.db.models import (
 from django.http import QueryDict
 
 from telegram_notifier.choices import Level, Severity, Status
-from telegram_notifier.utils import get_client_ip, get_filtered_headers, get_view_name
+from telegram_notifier.utils import (
+    _get_client_ip,
+    _get_filtered_headers,
+    _get_view_name,
+)
 
 
 class ExceptionLog(Model):
@@ -86,9 +90,9 @@ class ExceptionLog(Model):
                 "query_params": query_params,
                 "body": body_str,
                 "user_info": user_info,
-                "ip_address": get_client_ip(request),
-                "headers": get_filtered_headers(request),
-                "view_name": get_view_name(request),
+                "ip_address": _get_client_ip(request),
+                "headers": _get_filtered_headers(request),
+                "view_name": _get_view_name(request),
             })
 
         return cls.objects.create(**kwargs)
