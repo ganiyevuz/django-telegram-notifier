@@ -1,3 +1,4 @@
+from telegram_notifier.choices import Level, Severity, Status
 from telegram_notifier.client import notify_error_via_telegram
 from telegram_notifier.decorators import telegram_exception_notifier
 from telegram_notifier.message import build_exception_message
@@ -6,17 +7,11 @@ from telegram_notifier.report import report_exception
 
 
 def __getattr__(name):
-    if name in ("ExceptionLog", "Level", "Severity", "Status"):
-        from telegram_notifier.models import ExceptionLog, Level, Severity, Status
+    if name == "ExceptionLog":
+        from telegram_notifier.models import ExceptionLog
 
-        _lazy = {
-            "ExceptionLog": ExceptionLog,
-            "Level": Level,
-            "Severity": Severity,
-            "Status": Status,
-        }
-        globals().update(_lazy)
-        return _lazy[name]
+        globals()["ExceptionLog"] = ExceptionLog
+        return ExceptionLog
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 

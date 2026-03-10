@@ -8,58 +8,12 @@ from django.db.models import (
     GenericIPAddressField,
     JSONField,
     Model,
-    TextChoices,
     TextField,
 )
 from django.http import QueryDict
 
-
-class Level(TextChoices):
-    DEBUG = "debug", "Debug"
-    INFO = "info", "Info"
-    WARNING = "warning", "Warning"
-    ERROR = "error", "Error"
-    CRITICAL = "critical", "Critical"
-
-
-class Severity(TextChoices):
-    LOW = "low", "Low"
-    MODERATE = "moderate", "Moderate"
-    HIGH = "high", "High"
-    CRITICAL = "critical", "Critical"
-
-
-class Status(TextChoices):
-    NEW = "new", "New"
-    SEEN = "seen", "Seen"
-    RESOLVED = "resolved", "Resolved"
-    IGNORED = "ignored", "Ignored"
-
-
-SENSITIVE_HEADERS = {"Authorization", "Cookie", "Set-Cookie", "X-Csrftoken"}
-
-
-def _get_client_ip(request):
-    forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.META.get("REMOTE_ADDR")
-
-
-def _get_filtered_headers(request):
-    headers = {}
-    for key, value in request.META.items():
-        if key.startswith("HTTP_"):
-            header_name = key[5:].replace("_", "-").title()
-            if header_name not in SENSITIVE_HEADERS:
-                headers[header_name] = value
-    return headers
-
-
-def _get_view_name(request):
-    if hasattr(request, "resolver_match") and request.resolver_match:
-        return request.resolver_match.view_name or ""
-    return ""
+from telegram_notifier.choices import Level, Severity, Status
+from telegram_notifier.utils import get_client_ip, get_filtered_headers, get_view_name
 
 
 class ExceptionLog(Model):
@@ -132,9 +86,9 @@ class ExceptionLog(Model):
                 "query_params": query_params,
                 "body": body_str,
                 "user_info": user_info,
-                "ip_address": _get_client_ip(request),
-                "headers": _get_filtered_headers(request),
-                "view_name": _get_view_name(request),
+                "ip_address": get_client_ip(request),
+                "headers": get_filtered_headers(request),
+                "view_name": get_view_name(request),
             })
 
         return cls.objects.create(**kwargs)

@@ -1,7 +1,8 @@
 import pytest
 from django.test import RequestFactory
 
-from telegram_notifier.models import ExceptionLog, Level, Severity, Status
+from telegram_notifier.choices import Level, Severity, Status
+from telegram_notifier.models import ExceptionLog
 
 
 @pytest.mark.django_db
