@@ -18,12 +18,13 @@ def get_client_ip(request):
 
 
 def get_filtered_headers(request):
-    return {
-        key[HTTP_PREFIX_LEN:].replace("_", "-").title(): value
-        for key, value in request.META.items()
-        if key.startswith(HTTP_PREFIX)
-        and key[HTTP_PREFIX_LEN:].replace("_", "-").title() not in SENSITIVE_HEADERS
-    }
+    headers = {}
+    for key, value in request.META.items():
+        if key.startswith(HTTP_PREFIX):
+            header_name = key[HTTP_PREFIX_LEN:].replace("_", "-").title()
+            if header_name not in SENSITIVE_HEADERS:
+                headers[header_name] = value
+    return headers
 
 
 def get_view_name(request):
