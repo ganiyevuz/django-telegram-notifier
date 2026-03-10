@@ -6,6 +6,16 @@ from django.utils.timezone import now
 
 from telegram_notifier.settings import get_setting
 
+TRACEBACK_MAX_LENGTH = 600
+
+
+def _truncate_escaped(text, max_length):
+    """Truncate text first, then HTML-escape to avoid cutting entities."""
+    truncated = text[:max_length]
+    if len(text) > max_length:
+        truncated += "..."
+    return html.escape(truncated)
+
 
 def build_exception_message(exc, request=None, body=None):
     timestamp = now().strftime("%Y-%m-%d %H:%M:%S")
@@ -22,9 +32,10 @@ def build_exception_message(exc, request=None, body=None):
     ]
 
     if environment:
-        parts.insert(0, f"<b>Environment:</b> {environment}")
+        parts.insert(0, f"<b>Environment:</b> {html.escape(str(environment))}")
 
-    parts.append(f"<b>Traceback:</b>\n<pre>{html.escape(tb_string)[:600]}</pre>")
+    tb_escaped = _truncate_escaped(tb_string, TRACEBACK_MAX_LENGTH)
+    parts.append(f"<b>Traceback:</b>\n<pre>{tb_escaped}</pre>")
 
     if request and hasattr(request, "path"):
         body_str = _decode_body(body)
@@ -33,7 +44,9 @@ def build_exception_message(exc, request=None, body=None):
         parts.append(f"<b>Body:</b> <pre>{body_str}</pre>")
 
         if hasattr(request, "user") and request.user.is_authenticated:
-            parts.append(f"<b>User:</b> {html.escape(str(request.user))}")
+            parts.append(
+                f"<b>User:</b> {html.escape(str(request.user))}",
+            )
 
     return "\n".join(parts)[:max_length]
 
