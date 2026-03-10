@@ -19,7 +19,9 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        days = options["days"] or get_setting("CLEANUP_DAYS")
+        days = options["days"]
+        if days is None:
+            days = get_setting("CLEANUP_DAYS")
         cutoff = now() - timedelta(days=days)
         count, _ = ExceptionLog.objects.filter(created_at__lt=cutoff).delete()
         self.stdout.write(

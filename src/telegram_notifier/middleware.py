@@ -13,12 +13,13 @@ class GlobalExceptionReporterMiddleware:
             markcoroutinefunction(self)
 
     def __call__(self, request):
-        self._body = getattr(request, "body", b"")
+        request._tn_body = getattr(request, "body", b"")
         return self.get_response(request)
 
     async def __acall__(self, request):
-        self._body = getattr(request, "body", b"")
+        request._tn_body = getattr(request, "body", b"")
         return await self.get_response(request)
 
     def process_exception(self, request, exception):
-        report_exception(exception, request, self._body)
+        body = getattr(request, "_tn_body", b"")
+        report_exception(exception, request, body)

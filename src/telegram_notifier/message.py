@@ -28,8 +28,8 @@ def build_exception_message(exc, request=None, body=None):
 
     if request and hasattr(request, "path"):
         body_str = _decode_body(body)
-        parts.append(f"<b>Path:</b> {request.path}")
-        parts.append(f"<b>Method:</b> {request.method}")
+        parts.append(f"<b>Path:</b> {html.escape(request.path)}")
+        parts.append(f"<b>Method:</b> {html.escape(request.method)}")
         parts.append(f"<b>Body:</b> <pre>{body_str}</pre>")
 
         if hasattr(request, "user") and request.user.is_authenticated:

@@ -16,7 +16,7 @@ def notify_error_via_telegram(message):
     max_length = get_setting("MESSAGE_MAX_LENGTH")
 
     url = TELEGRAM_API_URL.format(token=token)
-    payload = {"text": message[:max_length], "parse_mode": "html"}
+    payload = {"text": message[:max_length], "parse_mode": "HTML"}
     success = True
 
     for chat_id in chat_ids:

@@ -13,8 +13,21 @@ HTTP_PREFIX_LEN = len(HTTP_PREFIX)
 def _get_client_ip(request):
     forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
     if forwarded:
-        return forwarded.split(",", 1)[0].strip()
+        ip = forwarded.split(",", 1)[0].strip()
+        if _is_valid_ip(ip):
+            return ip
+        return None
     return request.META.get("REMOTE_ADDR")
+
+
+def _is_valid_ip(value):
+    import ipaddress
+
+    try:
+        ipaddress.ip_address(value)
+        return True
+    except ValueError:
+        return False
 
 
 def _get_filtered_headers(request):

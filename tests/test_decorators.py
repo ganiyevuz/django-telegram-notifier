@@ -1,3 +1,4 @@
+import asyncio
 from unittest.mock import patch
 
 import pytest
@@ -45,3 +46,46 @@ def test_decorator_preserves_function_metadata():
 
     assert my_func.__name__ == "my_func"
     assert my_func.__doc__ == "My docstring."
+
+
+@pytest.mark.asyncio
+async def test_async_decorator_reports_and_reraises(settings):
+    settings.TELEGRAM_NOTIFIER = {
+        "BOT_TOKEN": "fake",
+        "CHAT_IDS": ["1"],
+    }
+
+    @telegram_exception_notifier
+    async def async_failing():
+        raise ValueError("async boom")
+
+    with (
+        patch("telegram_notifier.decorators.report_exception") as mock_report,
+        pytest.raises(ValueError, match="async boom"),
+    ):
+        await async_failing()
+
+    mock_report.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_async_decorator_returns_value(settings):
+    settings.TELEGRAM_NOTIFIER = {
+        "BOT_TOKEN": "fake",
+        "CHAT_IDS": ["1"],
+    }
+
+    @telegram_exception_notifier
+    async def async_good():
+        return 99
+
+    assert await async_good() == 99
+
+
+def test_async_decorator_preserves_coroutine_nature():
+    @telegram_exception_notifier
+    async def async_func():
+        pass
+
+    assert asyncio.iscoroutinefunction(async_func)
+    assert async_func.__name__ == "async_func"

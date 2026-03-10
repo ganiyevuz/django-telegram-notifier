@@ -20,10 +20,8 @@ def report_exception(exc, request=None, body=None, level=None, severity=None):
         if severity:
             kwargs["severity"] = severity
 
-        log = ExceptionLog.create_from_exception(
-            exc, request=request, body=body, **kwargs
+        ExceptionLog.create_from_exception(
+            exc, request=request, body=body, is_sent=sent, **kwargs
         )
-        log.is_sent = sent
-        log.save(update_fields=["is_sent"])
 
     return sent

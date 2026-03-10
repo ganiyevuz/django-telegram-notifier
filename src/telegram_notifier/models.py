@@ -53,7 +53,8 @@ class ExceptionLog(Model):
 
     @classmethod
     def create_from_exception(
-        cls, exc, request=None, body=None, level=Level.ERROR, severity=Severity.HIGH,
+        cls, exc, request=None, body=None, level=Level.ERROR,
+        severity=Severity.HIGH, is_sent=False,
     ):
         from telegram_notifier.settings import get_setting
 
@@ -68,6 +69,7 @@ class ExceptionLog(Model):
             "severity": severity,
             "hostname": socket.gethostname(),
             "environment": environment,
+            "is_sent": is_sent,
         }
 
         if request and hasattr(request, "path"):
