@@ -8,16 +8,23 @@ from telegram_notifier.settings import get_setting
 
 TRACEBACK_MAX_LENGTH = 600
 
+LEVEL_EMOJI = {
+    "debug": "⚪",
+    "info": "🔵",
+    "warning": "🟡",
+    "error": "🔴",
+    "critical": "⛔",
+}
+
 
 def _truncate_escaped(text, max_length):
-    """Truncate text first, then HTML-escape to avoid cutting entities."""
     truncated = text[:max_length]
     if len(text) > max_length:
         truncated += "..."
     return html.escape(truncated)
 
 
-def build_exception_message(exc, request=None, body=None):
+def build_exception_message(exc, request=None, body=None, level="error"):
     timestamp = now().strftime("%Y-%m-%d %H:%M:%S")
     tb_string = "".join(traceback.format_exception(exc))
     exc_class = html.escape(exc.__class__.__name__)
@@ -25,28 +32,37 @@ def build_exception_message(exc, request=None, body=None):
     max_length = get_setting("MESSAGE_MAX_LENGTH")
     environment = get_setting("ENVIRONMENT")
 
+    emoji = LEVEL_EMOJI.get(level, "🔴")
+    env_tag = f" in <b>{html.escape(str(environment))}</b>" if environment else ""
+
     parts = [
-        f"<b>Timestamp:</b> {timestamp}",
-        f"<b>Error Class:</b> {exc_class}",
+        f"{emoji} <b>{exc_class}</b>{env_tag}",
+        "",
         f"<b>Message:</b> {exc_message}",
+        f"<b>Timestamp:</b> <i>{timestamp}</i>",
     ]
 
-    if environment:
-        parts.insert(0, f"<b>Environment:</b> {html.escape(str(environment))}")
-
     tb_escaped = _truncate_escaped(tb_string, TRACEBACK_MAX_LENGTH)
-    parts.append(f"<b>Traceback:</b>\n<pre>{tb_escaped}</pre>")
+    parts.append(f"\n▸ <b>Traceback</b>\n<pre>{tb_escaped}</pre>")
 
     if request and hasattr(request, "path"):
         body_str = _decode_body(body)
-        parts.append(f"<b>Path:</b> {html.escape(request.path)}")
-        parts.append(f"<b>Method:</b> {html.escape(request.method)}")
-        parts.append(f"<b>Body:</b> <pre>{body_str}</pre>")
+        request_lines = [
+            "\n▸ <b>Request</b>",
+            f"<blockquote><b>Path:</b> <code>{html.escape(request.path)}</code>",
+            f"<b>Method:</b> <code>{html.escape(request.method)}</code>",
+        ]
+
+        if body_str != "{}":
+            request_lines.append(f"<b>Body:</b>\n<pre>{body_str}</pre>")
 
         if hasattr(request, "user") and request.user.is_authenticated:
-            parts.append(
-                f"<b>User:</b> {html.escape(str(request.user))}",
+            request_lines.append(
+                f"<b>User:</b> <code>{html.escape(str(request.user))}</code>",
             )
+
+        request_lines.append("</blockquote>")
+        parts.extend(request_lines)
 
     return "\n".join(parts)[:max_length]
 

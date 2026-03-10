@@ -11,7 +11,7 @@ def test_builds_message_without_request():
 
     assert "ValueError" in message
     assert "something broke" in message
-    assert "<b>Traceback:</b>" in message
+    assert "▸ <b>Traceback</b>" in message
 
 
 def test_builds_message_with_request():
@@ -21,11 +21,15 @@ def test_builds_message_with_request():
     try:
         raise RuntimeError("fail")
     except RuntimeError as exc:
-        message = build_exception_message(exc, request=request, body=b'{"key": "val"}')
+        message = build_exception_message(
+            exc, request=request, body=b'{"key": "val"}',
+        )
 
     assert "/api/test" in message
     assert "GET" in message
     assert "key" in message
+    assert "▸ <b>Request</b>" in message
+    assert "<blockquote>" in message
 
 
 def test_escapes_html_in_exception():
@@ -45,7 +49,9 @@ def test_handles_binary_body():
     try:
         raise ValueError("fail")
     except ValueError as exc:
-        message = build_exception_message(exc, request=request, body=b'\x89PNG\r\n')
+        message = build_exception_message(
+            exc, request=request, body=b'\x89PNG\r\n',
+        )
 
     assert "[binary data omitted]" in message
 
@@ -62,6 +68,7 @@ def test_includes_environment_when_set(settings):
         message = build_exception_message(exc)
 
     assert "production" in message
+    assert "🔴" in message
 
 
 def test_includes_user_info_when_authenticated():
@@ -81,3 +88,25 @@ def test_includes_user_info_when_authenticated():
         message = build_exception_message(exc, request=request)
 
     assert "john@example.com" in message
+
+
+def test_level_emoji():
+    try:
+        raise ValueError("fail")
+    except ValueError as exc:
+        assert "⛔" in build_exception_message(exc, level="critical")
+        assert "🟡" in build_exception_message(exc, level="warning")
+        assert "🔵" in build_exception_message(exc, level="info")
+        assert "⚪" in build_exception_message(exc, level="debug")
+
+
+def test_empty_body_not_shown():
+    factory = RequestFactory()
+    request = factory.get("/test")
+
+    try:
+        raise ValueError("fail")
+    except ValueError as exc:
+        message = build_exception_message(exc, request=request)
+
+    assert "<b>Body:</b>" not in message

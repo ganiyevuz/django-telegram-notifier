@@ -8,7 +8,9 @@ logger = logging.getLogger("telegram_notifier")
 
 
 def report_exception(exc, request=None, body=None, level=None, severity=None):
-    message = build_exception_message(exc, request=request, body=body)
+    message = build_exception_message(
+        exc, request=request, body=body, level=level or "error",
+    )
     sent = notify_error_via_telegram(message)
 
     if get_setting("STORE_EXCEPTIONS"):
