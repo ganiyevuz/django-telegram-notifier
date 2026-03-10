@@ -1,6 +1,6 @@
 from django.test import RequestFactory
 
-from telegram_notifier.message import build_exception_message
+from telegram_notifier.message import build_exception_message, build_traceback_content
 
 
 def test_builds_message_without_request():
@@ -11,7 +11,7 @@ def test_builds_message_without_request():
 
     assert "ValueError" in message
     assert "something broke" in message
-    assert "▸ <b>Traceback</b>" in message
+    assert "▸ <b>Traceback (preview)</b>" in message
 
 
 def test_builds_message_with_request():
@@ -110,3 +110,32 @@ def test_empty_body_not_shown():
         message = build_exception_message(exc, request=request)
 
     assert "<b>Body:</b>" not in message
+
+
+def test_traceback_preview_shows_last_lines():
+    def deeply_nested():
+        raise ValueError("deep error")
+
+    try:
+        deeply_nested()
+    except ValueError as exc:
+        message = build_exception_message(exc)
+
+    assert "▸ <b>Traceback (preview)</b>" in message
+    assert "deep error" in message
+    # Full traceback should NOT be in the message
+    assert "Traceback (most recent call last)" not in message
+
+
+def test_build_traceback_content_returns_full_traceback():
+    def deeply_nested():
+        raise ValueError("deep error")
+
+    try:
+        deeply_nested()
+    except ValueError as exc:
+        content = build_traceback_content(exc)
+
+    assert "Traceback (most recent call last)" in content
+    assert "ValueError: deep error" in content
+    assert "deeply_nested" in content

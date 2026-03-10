@@ -6,7 +6,7 @@ from django.utils.timezone import now
 
 from telegram_notifier.settings import get_setting
 
-TRACEBACK_MAX_LENGTH = 600
+TRACEBACK_PREVIEW_LINES = 5
 
 LEVEL_EMOJI = {
     "debug": "⚪",
@@ -17,11 +17,8 @@ LEVEL_EMOJI = {
 }
 
 
-def _truncate_escaped(text, max_length):
-    truncated = text[:max_length]
-    if len(text) > max_length:
-        truncated += "..."
-    return html.escape(truncated)
+def build_traceback_content(exc):
+    return "".join(traceback.format_exception(exc))
 
 
 def build_exception_message(exc, request=None, body=None, level="error"):
@@ -42,8 +39,10 @@ def build_exception_message(exc, request=None, body=None, level="error"):
         f"<b>Timestamp:</b> <i>{timestamp}</i>",
     ]
 
-    tb_escaped = _truncate_escaped(tb_string, TRACEBACK_MAX_LENGTH)
-    parts.append(f"\n▸ <b>Traceback</b>\n<pre>{tb_escaped}</pre>")
+    tb_lines = tb_string.strip().splitlines()
+    preview_lines = tb_lines[-TRACEBACK_PREVIEW_LINES:]
+    tb_preview = html.escape("\n".join(preview_lines))
+    parts.append(f"\n▸ <b>Traceback (preview)</b>\n<pre>{tb_preview}</pre>")
 
     if request and hasattr(request, "path"):
         body_str = _decode_body(body)
