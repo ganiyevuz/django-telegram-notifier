@@ -1,3 +1,5 @@
+import os
+
 SECRET_KEY = "test-secret-key-do-not-use-in-production"
 INSTALLED_APPS = [
     "django.contrib.contenttypes",
@@ -11,6 +13,6 @@ DATABASES = {
     }
 }
 TELEGRAM_NOTIFIER = {
-    "BOT_TOKEN": "fake-bot-token",
-    "CHAT_IDS": ["123456"],
+    "BOT_TOKEN": os.environ.get("TELEGRAM_BOT_TOKEN", "fake-bot-token"),
+    "CHAT_IDS": os.environ.get("TELEGRAM_CHAT_IDS", "123456").split(","),
 }
