@@ -1,149 +1,300 @@
-# Django Package Template
+# django-telegram-notifier
 
-A modern, minimal, and production-ready template for building and publishing reusable Django packages to PyPI.
+[![PyPI version](https://img.shields.io/pypi/v/django-telegram-notifier.svg)](https://pypi.org/project/django-telegram-notifier/)
+[![Python versions](https://img.shields.io/pypi/pyversions/django-telegram-notifier.svg)](https://pypi.org/project/django-telegram-notifier/)
+[![Django versions](https://img.shields.io/badge/django-5.2%20%7C%206.0-blue.svg)](https://pypi.org/project/django-telegram-notifier/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/ganiyevuz/django-telegram-notifier/blob/main/LICENSE)
 
-[GitHub: ganiyevuz/django-package-template](https://github.com/ganiyevuz/django-package-template)
+Catch unhandled Django exceptions and send formatted error reports to Telegram — like a lightweight Sentry. Includes full traceback as a `.py` file attachment with syntax highlighting, optional database logging, and async support.
 
 ---
 
 ## Features
 
-- Clean and minimal project structure for Django package development
-- CI/CD via GitHub Actions for testing and automated PyPI publishing
-- Modern dependency management with [uv](https://github.com/astral-sh/uv)
-- Python 3.11-3.13 & Django 5.2+ support
-- Fast linting and formatting with [ruff](https://github.com/astral-sh/ruff)
-- Preconfigured pytest and coverage
-- One-command release script
-- Makefile with common development commands
-- MIT License
+- **Automatic exception catching** via middleware (sync & async)
+- **Formatted Telegram messages** with emoji levels, request context, and traceback preview
+- **Full traceback as `.py` file** — Telegram renders Python syntax highlighting
+- **Optional database logging** — store every exception with request details, severity, status
+- **Decorator** for wrapping individual functions/views
+- **Multi-chat support** — send to multiple Telegram chats
+- **Proxy support** for restricted environments
+- **Management command** to clean up old exception logs
 
 ---
 
-## Quickstart
+## Quick Start
 
-### 1. Create a New Package from Template
+### 1. Install
 
 ```bash
-git clone https://github.com/ganiyevuz/django-package-template.git your-package-name
-cd your-package-name
-
-rm -rf .git
-git init
-git add .
-git commit -m "Initial commit using Django package template"
+pip install django-telegram-notifier
 ```
 
-### 2. Customize Metadata
+### 2. Get a Telegram Bot Token
 
-Edit the following files:
+1. Open Telegram, search for [@BotFather](https://t.me/BotFather)
+2. Send `/newbot` and follow the prompts
+3. Copy the bot token (e.g. `123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11`)
+4. Send a message to your bot, then visit `https://api.telegram.org/bot<TOKEN>/getUpdates` to find your `chat_id`
 
-* `pyproject.toml` - package name, version, author, dependencies
-* `README.md` - your own documentation
-* `LICENSE` - update copyright
+### 3. Configure
 
-Create your Django app inside `src/` (e.g. `src/your_package_name/`).
+Add to your Django `settings.py`:
 
-### 3. Set Up the Development Environment
+```python
+INSTALLED_APPS = [
+    # ...
+    "telegram_notifier",
+]
+
+MIDDLEWARE = [
+    # ... other middleware ...
+    "telegram_notifier.middleware.GlobalExceptionReporterMiddleware",
+]
+
+TELEGRAM_NOTIFIER = {
+    "BOT_TOKEN": "your-bot-token",
+    "CHAT_IDS": ["your-chat-id"],
+}
+```
+
+### 4. Migrate (only if using database logging)
 
 ```bash
-# Install uv (if not installed)
-curl -LsSf https://astral.sh/uv/install.sh | sh
+python manage.py migrate
+```
 
-# Create virtual environment
-uv venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
+That's it. Any unhandled exception will now send a notification to your Telegram chat.
 
-# Install dependencies with dev tools
+---
+
+## Settings
+
+All settings go inside the `TELEGRAM_NOTIFIER` dictionary in your Django settings:
+
+```python
+TELEGRAM_NOTIFIER = {
+    # Required
+    "BOT_TOKEN": "your-bot-token",
+    "CHAT_IDS": ["chat-id-1", "chat-id-2"],
+
+    # Optional (defaults shown)
+    "ENVIRONMENT": None,         # e.g. "production", "staging" — shown in messages
+    "PROXY": None,               # e.g. "http://proxy:8080"
+    "MESSAGE_MAX_LENGTH": 4000,  # max message length (Telegram limit)
+    "STORE_EXCEPTIONS": False,   # save exceptions to database
+    "CLEANUP_DAYS": 30,          # days to keep exception logs
+}
+```
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `BOT_TOKEN` | `str` | **required** | Telegram Bot API token |
+| `CHAT_IDS` | `list[str]` | **required** | Telegram chat IDs to send notifications to |
+| `ENVIRONMENT` | `str \| None` | `None` | Environment name shown in messages (e.g. `"production"`) |
+| `PROXY` | `str \| None` | `None` | HTTP proxy URL for Telegram API requests |
+| `MESSAGE_MAX_LENGTH` | `int` | `4000` | Maximum message length before truncation |
+| `STORE_EXCEPTIONS` | `bool` | `False` | Save exceptions to `ExceptionLog` model |
+| `CLEANUP_DAYS` | `int` | `30` | Days to keep exception logs (used by cleanup command) |
+
+---
+
+## Usage
+
+### Middleware (recommended)
+
+The middleware catches all unhandled exceptions automatically. Place it after Django's built-in middleware:
+
+```python
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "telegram_notifier.middleware.GlobalExceptionReporterMiddleware",
+]
+```
+
+The middleware is **async-capable** — works with both WSGI and ASGI servers.
+
+### Decorator
+
+Wrap individual functions or views:
+
+```python
+from telegram_notifier import telegram_exception_notifier
+
+@telegram_exception_notifier
+def my_task():
+    # if this raises, it gets reported to Telegram
+    do_something_risky()
+
+# Also works with async functions
+@telegram_exception_notifier
+async def my_async_task():
+    await do_something_risky()
+```
+
+### Manual Reporting
+
+Report exceptions programmatically:
+
+```python
+from telegram_notifier import report_exception
+
+try:
+    do_something()
+except Exception as exc:
+    report_exception(exc, level="critical", severity="high")
+```
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `exc` | `Exception` | **required** | The exception to report |
+| `request` | `HttpRequest \| None` | `None` | Django request (adds path, method, body, user) |
+| `body` | `bytes \| None` | `None` | Request body |
+| `level` | `str \| None` | `"error"` | `"debug"`, `"info"`, `"warning"`, `"error"`, `"critical"` |
+| `severity` | `str \| None` | `None` | `"low"`, `"moderate"`, `"high"`, `"critical"` |
+
+---
+
+## Telegram Message Format
+
+Each notification is sent as a **document** (`.py` file with full traceback) with a **caption** containing:
+
+```
+🔴 ValueError in production
+
+Message: invalid literal for int()
+Timestamp: 2026-03-11 12:30:45
+
+▸ Traceback (preview)
+    value = int(user_input)
+ValueError: invalid literal for int() with base 10: 'abc'
+
+▸ Request
+  Path: /api/users/
+  Method: POST
+  Body: {"name": "test"}
+  User: admin@example.com
+```
+
+**Level emojis:** ⚪ debug · 🔵 info · 🟡 warning · 🔴 error · ⛔ critical
+
+The attached `.py` file contains the **complete traceback** with Python syntax highlighting in Telegram.
+
+---
+
+## Database Logging
+
+Enable with `"STORE_EXCEPTIONS": True`. This creates an `ExceptionLog` entry for every reported exception.
+
+### ExceptionLog Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `exception_class` | `CharField` | e.g. `"ValueError"` |
+| `message` | `TextField` | Exception message |
+| `traceback` | `TextField` | Full traceback |
+| `level` | `CharField` | `debug`, `info`, `warning`, `error`, `critical` |
+| `severity` | `CharField` | `low`, `moderate`, `high`, `critical` |
+| `status` | `CharField` | `new`, `seen`, `resolved`, `ignored` |
+| `path` | `CharField` | Request path |
+| `method` | `CharField` | HTTP method |
+| `query_params` | `JSONField` | Query string parameters |
+| `body` | `TextField` | Request body |
+| `user_info` | `CharField` | Authenticated user string |
+| `ip_address` | `GenericIPAddressField` | Client IP (with X-Forwarded-For support) |
+| `headers` | `JSONField` | Request headers (sensitive headers filtered) |
+| `view_name` | `CharField` | Django view name |
+| `hostname` | `CharField` | Server hostname |
+| `environment` | `CharField` | Environment from settings |
+| `is_sent` | `BooleanField` | Whether Telegram notification was sent |
+| `created_at` | `DateTimeField` | When the exception occurred |
+
+### Querying Exceptions
+
+```python
+from telegram_notifier import ExceptionLog, Status, Level
+
+# Unresolved errors
+ExceptionLog.objects.filter(status=Status.NEW, level=Level.ERROR)
+
+# Errors in the last 24 hours
+from django.utils.timezone import now
+from datetime import timedelta
+ExceptionLog.objects.filter(created_at__gte=now() - timedelta(hours=24))
+
+# Mark as resolved
+ExceptionLog.objects.filter(pk=1).update(status=Status.RESOLVED)
+```
+
+### Cleanup Command
+
+Delete old exception logs:
+
+```bash
+# Use CLEANUP_DAYS setting (default: 30)
+python manage.py cleanup_exceptions
+
+# Override with custom days
+python manage.py cleanup_exceptions --days=7
+```
+
+Schedule with cron for automatic cleanup:
+
+```bash
+0 3 * * * python /path/to/manage.py cleanup_exceptions
+```
+
+---
+
+## When to Use
+
+| Scenario | Recommendation |
+|----------|----------------|
+| Small/medium project, want instant error alerts | **Use this** |
+| Need error notifications in Telegram groups | **Use this** |
+| Want a lightweight alternative to Sentry | **Use this** |
+| Team already uses Telegram for communication | **Use this** |
+| Need detailed error analytics and dashboards | Use Sentry instead |
+| Processing thousands of errors per minute | Use Sentry instead |
+
+---
+
+## Requirements
+
+- Python >= 3.11
+- Django >= 5.2
+- httpx >= 0.28.1
+
+---
+
+## Development
+
+```bash
+git clone https://github.com/ganiyevuz/django-telegram-notifier.git
+cd django-telegram-notifier
+
+# Install dependencies
 uv sync --group dev
+
+# Copy env file and add your bot token
+cp .env.example .env
+
+# Run tests
+pytest
+
+# Run linter
+ruff check .
 ```
-
-### 4. Start Coding
-
-Implement your Django package inside `src/your_package_name/`:
-
-```text
-src/
-└── your_package_name/
-    ├── __init__.py
-    ├── apps.py
-    ├── models.py
-    ├── views.py
-    ├── urls.py
-    ├── admin.py
-    ├── templates/
-    └── static/
-```
-
-### 5. Use the Makefile
-
-```bash
-make install    # Install with dev dependencies
-make lint       # Check code style with ruff
-make format     # Format code with ruff
-make test       # Run tests with pytest
-make coverage   # Run tests with coverage
-make dist       # Build distributable package
-make release v=0.1.0  # Lint, test, bump version, tag, and push
-make clean      # Clean build artifacts
-```
-
----
-
-## GitHub Actions: CI/CD
-
-This template includes GitHub Actions for:
-
-* Running linting and tests on pushes and PRs
-* Testing across Python 3.11-3.13 and Django 5.2+
-* Publishing to PyPI on version tag push (e.g., `v0.1.0`)
-
-### PyPI Configuration (Trusted Publishing)
-
-1. Go to [PyPI](https://pypi.org) and configure trusted publishing for your package
-2. Add a publishing environment named `pypi` in your GitHub repo settings
-
-### Release
-
-```bash
-# One-command release: lints, tests, bumps version, tags, and pushes
-make release v=0.1.0
-
-# If CI fails, run the same command again — it will prompt to replace the tag
-make release v=0.1.0
-```
-
----
-
-## Project Structure
-
-```text
-django-package-template/
-├── .github/workflows/    # GitHub Actions CI/CD
-├── scripts/release.sh    # Release automation script
-├── src/your_package/     # Your Django app/package
-├── tests/                # Unit tests (create this)
-├── pyproject.toml        # Project metadata and dependencies
-├── Makefile              # Development commands
-├── LICENSE               # MIT License
-├── README.md             # This file
-└── .gitignore
-```
-
----
-
-## Contributing
-
-```bash
-git checkout -b feature/my-feature
-git commit -m "Add my feature"
-git push origin feature/my-feature
-```
-
-Then open a Pull Request.
 
 ---
 
 ## License
 
-Licensed under the MIT License. See [LICENSE](LICENSE) for details.
+MIT

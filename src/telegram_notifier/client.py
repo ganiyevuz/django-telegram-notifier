@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import io
 import logging
 from datetime import datetime
@@ -14,18 +16,25 @@ TELEGRAM_SEND_DOCUMENT_URL = "https://api.telegram.org/bot{token}/sendDocument"
 CAPTION_MAX_LENGTH = 1024
 
 
-def notify_error_via_telegram(message, traceback_content=None):
-    token = get_setting("BOT_TOKEN")
-    chat_ids = get_setting("CHAT_IDS")
-    proxy = get_setting("PROXY")
-    max_length = get_setting("MESSAGE_MAX_LENGTH")
+def notify_error_via_telegram(
+    message: str,
+    traceback_content: str | None = None,
+) -> bool:
+    token: str = get_setting("BOT_TOKEN")
+    chat_ids: list[str] = get_setting("CHAT_IDS")
+    proxy: str | None = get_setting("PROXY")
+    max_length: int = get_setting("MESSAGE_MAX_LENGTH")
     success = True
 
     for chat_id in chat_ids:
         try:
             if traceback_content:
                 _send_document_with_caption(
-                    token, chat_id, message, traceback_content, proxy,
+                    token,
+                    chat_id,
+                    message,
+                    traceback_content,
+                    proxy,
                 )
             else:
                 url = TELEGRAM_SEND_MESSAGE_URL.format(token=token)
@@ -43,7 +52,13 @@ def notify_error_via_telegram(message, traceback_content=None):
     return success
 
 
-def _send_document_with_caption(token, chat_id, message, traceback_content, proxy):
+def _send_document_with_caption(
+    token: str,
+    chat_id: str,
+    message: str,
+    traceback_content: str,
+    proxy: str | None,
+) -> None:
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     last_line = traceback_content.strip().splitlines()[-1]
     exc_class = last_line.split(":")[0].split(".")[-1]
@@ -61,7 +76,13 @@ def _send_document_with_caption(token, chat_id, message, traceback_content, prox
     _post(url, data=data, files=files, proxy=proxy)
 
 
-def _post(url, *, data, files=None, proxy=None):
+def _post(
+    url: str,
+    *,
+    data: dict[str, str],
+    files: dict[str, tuple[str, io.BytesIO, str]] | None = None,
+    proxy: str | None = None,
+) -> None:
     if proxy:
         with httpx.Client(proxy=proxy) as client:
             response = client.post(url, data=data, files=files, timeout=3)

@@ -14,9 +14,7 @@ def test_cleanup_deletes_old_exceptions():
         message="old",
         traceback="...",
     )
-    ExceptionLog.objects.filter(pk=old.pk).update(
-        created_at=now() - timedelta(days=31)
-    )
+    ExceptionLog.objects.filter(pk=old.pk).update(created_at=now() - timedelta(days=31))
     new = ExceptionLog.objects.create(
         exception_class="NewError",
         message="new",
@@ -36,9 +34,7 @@ def test_cleanup_respects_days_argument():
         message="test",
         traceback="...",
     )
-    ExceptionLog.objects.filter(pk=log.pk).update(
-        created_at=now() - timedelta(days=8)
-    )
+    ExceptionLog.objects.filter(pk=log.pk).update(created_at=now() - timedelta(days=8))
 
     call_command("cleanup_exceptions", "--days=7")
 

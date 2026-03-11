@@ -27,7 +27,9 @@ def test_middleware_calls_report_on_exception():
 def test_middleware_captures_request_body():
     factory = RequestFactory()
     request = factory.post(
-        "/test", data=b'{"key": "value"}', content_type="application/json",
+        "/test",
+        data=b'{"key": "value"}',
+        content_type="application/json",
     )
 
     middleware = GlobalExceptionReporterMiddleware(lambda r: None)
@@ -43,10 +45,14 @@ def test_middleware_captures_request_body():
 def test_middleware_body_is_per_request():
     factory = RequestFactory()
     request_a = factory.post(
-        "/a", data=b'{"a": 1}', content_type="application/json",
+        "/a",
+        data=b'{"a": 1}',
+        content_type="application/json",
     )
     request_b = factory.post(
-        "/b", data=b'{"b": 2}', content_type="application/json",
+        "/b",
+        data=b'{"b": 2}',
+        content_type="application/json",
     )
 
     middleware = GlobalExceptionReporterMiddleware(lambda r: None)

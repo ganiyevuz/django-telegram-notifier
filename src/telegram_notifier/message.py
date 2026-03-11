@@ -1,14 +1,16 @@
+from __future__ import annotations
+
 import html
 import traceback
 
-from django.http import RawPostDataException
+from django.http import HttpRequest, RawPostDataException
 from django.utils.timezone import now
 
 from telegram_notifier.settings import get_setting
 
 TRACEBACK_PREVIEW_LINES = 5
 
-LEVEL_EMOJI = {
+LEVEL_EMOJI: dict[str, str] = {
     "debug": "⚪",
     "info": "🔵",
     "warning": "🟡",
@@ -17,17 +19,22 @@ LEVEL_EMOJI = {
 }
 
 
-def build_traceback_content(exc):
+def build_traceback_content(exc: BaseException) -> str:
     return "".join(traceback.format_exception(exc))
 
 
-def build_exception_message(exc, request=None, body=None, level="error"):
+def build_exception_message(
+    exc: BaseException,
+    request: HttpRequest | None = None,
+    body: bytes | None = None,
+    level: str = "error",
+) -> str:
     timestamp = now().strftime("%Y-%m-%d %H:%M:%S")
     tb_string = "".join(traceback.format_exception(exc))
     exc_class = html.escape(exc.__class__.__name__)
     exc_message = html.escape(str(exc))
-    max_length = get_setting("MESSAGE_MAX_LENGTH")
-    environment = get_setting("ENVIRONMENT")
+    max_length: int = get_setting("MESSAGE_MAX_LENGTH")
+    environment: str | None = get_setting("ENVIRONMENT")
 
     emoji = LEVEL_EMOJI.get(level, "🔴")
     env_tag = f" in <b>{html.escape(str(environment))}</b>" if environment else ""
@@ -69,7 +76,7 @@ def build_exception_message(exc, request=None, body=None, level="error"):
     return "\n".join(parts)[:max_length]
 
 
-def _decode_body(body):
+def _decode_body(body: bytes | None) -> str:
     if not body:
         return "{}"
     try:

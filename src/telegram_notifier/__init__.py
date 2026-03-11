@@ -5,8 +5,10 @@ from telegram_notifier.message import build_exception_message, build_traceback_c
 from telegram_notifier.middleware import GlobalExceptionReporterMiddleware
 from telegram_notifier.report import report_exception
 
+__version__ = "0.1.0"
 
-def __getattr__(name):
+
+def __getattr__(name: str) -> type:
     if name == "ExceptionLog":
         from telegram_notifier.models import ExceptionLog
 

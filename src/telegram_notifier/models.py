@@ -27,7 +27,10 @@ class ExceptionLog(Model):
     level = CharField(max_length=10, choices=Level.choices, default=Level.ERROR)
     severity = CharField(max_length=10, choices=Severity.choices, default=Severity.HIGH)
     status = CharField(
-        max_length=10, choices=Status.choices, default=Status.NEW, db_index=True,
+        max_length=10,
+        choices=Status.choices,
+        default=Status.NEW,
+        db_index=True,
     )
 
     path = CharField(max_length=500, blank=True)
@@ -53,8 +56,13 @@ class ExceptionLog(Model):
 
     @classmethod
     def create_from_exception(
-        cls, exc, request=None, body=None, level=Level.ERROR,
-        severity=Severity.HIGH, is_sent=False,
+        cls,
+        exc,
+        request=None,
+        body=None,
+        level=Level.ERROR,
+        severity=Severity.HIGH,
+        is_sent=False,
     ):
         from telegram_notifier.settings import get_setting
 
@@ -86,15 +94,17 @@ class ExceptionLog(Model):
 
             query_params = dict(QueryDict(request.META.get("QUERY_STRING", "")).lists())
 
-            kwargs.update({
-                "path": request.path,
-                "method": request.method,
-                "query_params": query_params,
-                "body": body_str,
-                "user_info": user_info,
-                "ip_address": _get_client_ip(request),
-                "headers": _get_filtered_headers(request),
-                "view_name": _get_view_name(request),
-            })
+            kwargs.update(
+                {
+                    "path": request.path,
+                    "method": request.method,
+                    "query_params": query_params,
+                    "body": body_str,
+                    "user_info": user_info,
+                    "ip_address": _get_client_ip(request),
+                    "headers": _get_filtered_headers(request),
+                    "view_name": _get_view_name(request),
+                }
+            )
 
         return cls.objects.create(**kwargs)

@@ -1,16 +1,24 @@
-SENSITIVE_HEADERS = frozenset({
-    "Authorization",
-    "Cookie",
-    "Set-Cookie",
-    "X-Api-Key",
-    "X-Csrftoken",
-})
+from __future__ import annotations
+
+import ipaddress
+
+from django.http import HttpRequest
+
+SENSITIVE_HEADERS: frozenset[str] = frozenset(
+    {
+        "Authorization",
+        "Cookie",
+        "Set-Cookie",
+        "X-Api-Key",
+        "X-Csrftoken",
+    }
+)
 
 HTTP_PREFIX = "HTTP_"
 HTTP_PREFIX_LEN = len(HTTP_PREFIX)
 
 
-def _get_client_ip(request):
+def _get_client_ip(request: HttpRequest) -> str | None:
     forwarded = request.META.get("HTTP_X_FORWARDED_FOR")
     if forwarded:
         ip = forwarded.split(",", 1)[0].strip()
@@ -20,9 +28,7 @@ def _get_client_ip(request):
     return request.META.get("REMOTE_ADDR")
 
 
-def _is_valid_ip(value):
-    import ipaddress
-
+def _is_valid_ip(value: str) -> bool:
     try:
         ipaddress.ip_address(value)
         return True
@@ -30,8 +36,8 @@ def _is_valid_ip(value):
         return False
 
 
-def _get_filtered_headers(request):
-    headers = {}
+def _get_filtered_headers(request: HttpRequest) -> dict[str, str]:
+    headers: dict[str, str] = {}
     for key, value in request.META.items():
         if key.startswith(HTTP_PREFIX):
             header_name = key[HTTP_PREFIX_LEN:].replace("_", "-").title()
@@ -40,7 +46,7 @@ def _get_filtered_headers(request):
     return headers
 
 
-def _get_view_name(request):
+def _get_view_name(request: HttpRequest) -> str:
     resolver_match = getattr(request, "resolver_match", None)
     if resolver_match:
         return resolver_match.view_name or ""

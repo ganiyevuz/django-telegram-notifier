@@ -22,7 +22,9 @@ def test_builds_message_with_request():
         raise RuntimeError("fail")
     except RuntimeError as exc:
         message = build_exception_message(
-            exc, request=request, body=b'{"key": "val"}',
+            exc,
+            request=request,
+            body=b'{"key": "val"}',
         )
 
     assert "/api/test" in message
@@ -50,7 +52,9 @@ def test_handles_binary_body():
         raise ValueError("fail")
     except ValueError as exc:
         message = build_exception_message(
-            exc, request=request, body=b'\x89PNG\r\n',
+            exc,
+            request=request,
+            body=b"\x89PNG\r\n",
         )
 
     assert "[binary data omitted]" in message
@@ -77,6 +81,7 @@ def test_includes_user_info_when_authenticated():
 
     class FakeUser:
         is_authenticated = True
+
         def __str__(self):
             return "john@example.com"
 

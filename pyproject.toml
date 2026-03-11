@@ -19,16 +19,25 @@ classifiers = [
     "Framework :: Django :: 6.0",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Monitoring",
+    "Typing :: Typed",
 ]
 keywords = ["django", "telegram", "exception", "error", "notification", "monitoring"]
-
 dependencies = [
     "django>=5.2",
     "httpx>=0.28.1",
 ]
+
+[project.urls]
+Homepage = "https://github.com/ganiyevuz/django-telegram-notifier"
+Repository = "https://github.com/ganiyevuz/django-telegram-notifier"
+Issues = "https://github.com/ganiyevuz/django-telegram-notifier/issues"
 
 [dependency-groups]
 dev = [
@@ -42,6 +51,13 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/telegram_notifier"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/telegram_notifier",
+    "LICENSE",
+    "README.md",
+]
 
 [tool.ruff]
 target-version = "py311"

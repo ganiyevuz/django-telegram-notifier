@@ -21,7 +21,10 @@ def test_get_setting_raises_for_missing_required(settings):
 
 def test_defaults_contains_expected_keys():
     expected = {
-        "PROXY", "MESSAGE_MAX_LENGTH", "ENVIRONMENT",
-        "STORE_EXCEPTIONS", "CLEANUP_DAYS",
+        "PROXY",
+        "MESSAGE_MAX_LENGTH",
+        "ENVIRONMENT",
+        "STORE_EXCEPTIONS",
+        "CLEANUP_DAYS",
     }
     assert expected.issubset(set(DEFAULTS.keys()))

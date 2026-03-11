@@ -12,7 +12,8 @@ def test_sends_message_to_all_chat_ids(settings):
     mock_response.status_code = 200
 
     with patch(
-        "telegram_notifier.client.httpx.post", return_value=mock_response,
+        "telegram_notifier.client.httpx.post",
+        return_value=mock_response,
     ) as mock_post:
         result = notify_error_via_telegram("test error")
 
@@ -60,7 +61,8 @@ def test_sends_document_with_caption(settings):
     mock_response.status_code = 200
 
     with patch(
-        "telegram_notifier.client.httpx.post", return_value=mock_response,
+        "telegram_notifier.client.httpx.post",
+        return_value=mock_response,
     ) as mock_post:
         notify_error_via_telegram("test error", traceback_content="ValueError: boom")
 
@@ -82,7 +84,8 @@ def test_sends_document_to_all_chats(settings):
     mock_response.status_code = 200
 
     with patch(
-        "telegram_notifier.client.httpx.post", return_value=mock_response,
+        "telegram_notifier.client.httpx.post",
+        return_value=mock_response,
     ) as mock_post:
         notify_error_via_telegram("test error", traceback_content="ValueError: boom")
 
