@@ -1,0 +1,220 @@
+{% extends "admin/change_list.html" %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+    <style>
+        .tn-dashboard {
+            margin-bottom: 20px;
+            max-width: 100%;
+            overflow: hidden;
+        }
+        .tn-stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding: 16px;
+            background: var(--body-bg, #fff);
+            border: 1px solid var(--hairline-color, #ddd);
+            border-radius: 10px;
+        }
+        .tn-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1 1 auto;
+            min-width: 70px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: var(--darkened-bg, #f8f9fa);
+        }
+        .tn-stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            line-height: 1;
+        }
+        .tn-stat-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+            opacity: 0.7;
+        }
+        .tn-stat--critical .tn-stat-value { color: #dc2626; }
+        .tn-stat--error .tn-stat-value { color: #991b1b; }
+        .tn-stat--warning .tn-stat-value { color: #92400e; }
+        .tn-stat--unresolved .tn-stat-value { color: #1e40af; }
+        .tn-stat--unsent .tn-stat-value { color: #9a3412; }
+        .tn-stat--total .tn-stat-value { color: var(--body-quiet-color, #666); }
+        .tn-charts {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 16px;
+        }
+        @media (max-width: 900px) {
+            .tn-charts { grid-template-columns: 1fr; }
+        }
+        .tn-chart-card {
+            padding: 16px;
+            background: var(--body-bg, #fff);
+            border: 1px solid var(--hairline-color, #ddd);
+            border-radius: 10px;
+            position: relative;
+            min-width: 0;
+            overflow: hidden;
+        }
+        .tn-chart-title {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--body-quiet-color, #666);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .tn-chart-wrap {
+            position: relative;
+            width: 100%;
+            height: 180px;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="tn-dashboard">
+    <!-- Stats row -->
+    <div class="tn-stats">
+        <div class="tn-stat tn-stat--total">
+            <span class="tn-stat-value">{{ stats_24h.total|default:"0" }}</span>
+            <span class="tn-stat-label">Last 24h</span>
+        </div>
+        <div class="tn-stat tn-stat--critical">
+            <span class="tn-stat-value">{{ stats_24h.critical|default:"0" }}</span>
+            <span class="tn-stat-label">Critical</span>
+        </div>
+        <div class="tn-stat tn-stat--error">
+            <span class="tn-stat-value">{{ stats_24h.error|default:"0" }}</span>
+            <span class="tn-stat-label">Errors</span>
+        </div>
+        <div class="tn-stat tn-stat--warning">
+            <span class="tn-stat-value">{{ stats_24h.warning|default:"0" }}</span>
+            <span class="tn-stat-label">Warnings</span>
+        </div>
+        <div class="tn-stat tn-stat--unresolved">
+            <span class="tn-stat-value">{{ total_unresolved|default:"0" }}</span>
+            <span class="tn-stat-label">Unresolved</span>
+        </div>
+        <div class="tn-stat tn-stat--unsent">
+            <span class="tn-stat-value">{{ stats_24h.unsent|default:"0" }}</span>
+            <span class="tn-stat-label">Unsent (24h)</span>
+        </div>
+        <div class="tn-stat tn-stat--total">
+            <span class="tn-stat-value">{{ stats_7d_total|default:"0" }}</span>
+            <span class="tn-stat-label">Last 7d</span>
+        </div>
+    </div>
+
+    <!-- Charts row -->
+    <div class="tn-charts">
+        <div class="tn-chart-card">
+            <div class="tn-chart-title">Exceptions (24h)</div>
+            <div class="tn-chart-wrap"><canvas id="tn-chart-timeline"></canvas></div>
+        </div>
+        <div class="tn-chart-card">
+            <div class="tn-chart-title">By Level (7d)</div>
+            <div class="tn-chart-wrap"><canvas id="tn-chart-level"></canvas></div>
+        </div>
+    </div>
+</div>
+
+<script>
+(() => {
+    const isDark = () => {
+        const theme = document.documentElement.getAttribute('data-theme');
+        if (theme) return theme === 'dark';
+        return matchMedia('(prefers-color-scheme: dark)').matches;
+    };
+
+    const gridColor = () => isDark() ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
+    const textColor = () => isDark() ? '#9ca3af' : '#6b7280';
+
+    const LEVEL_COLORS = {
+        Critical: '#dc2626',
+        Error: '#f87171',
+        Warning: '#f59e0b',
+        Info: '#3b82f6',
+        Debug: '#9ca3af',
+    };
+
+    Chart.defaults.color = textColor();
+    Chart.defaults.borderColor = gridColor();
+
+    // --- Timeline bar chart ---
+    new Chart(document.getElementById('tn-chart-timeline'), {
+        type: 'bar',
+        data: {
+            labels: {{ chart_timeline_labels|safe }},
+            datasets: [{
+                label: 'Exceptions',
+                data: {{ chart_timeline_data|safe }},
+                backgroundColor: isDark() ? 'rgba(239,68,68,0.5)' : 'rgba(239,68,68,0.7)',
+                borderColor: '#ef4444',
+                borderWidth: 1,
+                borderRadius: 3,
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: { mode: 'index', intersect: false },
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 },
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 },
+                    grid: { color: gridColor() },
+                },
+            },
+        },
+    });
+
+    // --- Level doughnut ---
+    const levelLabels = {{ chart_level_labels|safe }};
+    const levelData = {{ chart_level_data|safe }};
+    const levelColors = levelLabels.map(l => LEVEL_COLORS[l] || '#9ca3af');
+
+    new Chart(document.getElementById('tn-chart-level'), {
+        type: 'doughnut',
+        data: {
+            labels: levelLabels,
+            datasets: [{
+                data: levelData,
+                backgroundColor: levelColors,
+                borderWidth: isDark() ? 0 : 2,
+                borderColor: isDark() ? 'transparent' : '#fff',
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '55%',
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: { boxWidth: 12, padding: 12, font: { size: 12 } },
+                },
+            },
+        },
+    });
+
+})();
+</script>
+{{ block.super }}
+{% endblock %}

@@ -4,6 +4,8 @@ import ipaddress
 
 from django.http import HttpRequest
 
+from telegram_notifier.choices import Level, Severity
+
 SENSITIVE_HEADERS: frozenset[str] = frozenset(
     {
         "Authorization",
@@ -51,3 +53,75 @@ def _get_view_name(request: HttpRequest) -> str:
     if resolver_match:
         return resolver_match.view_name or ""
     return ""
+
+
+# --- Exception classification ---
+
+# Critical: system-level failures that need immediate attention
+_CRITICAL_EXCEPTIONS: tuple[str, ...] = (
+    "SystemExit",
+    "MemoryError",
+    "RecursionError",
+    "SystemError",
+)
+
+# Warning: expected client/validation errors, not bugs
+_WARNING_EXCEPTIONS: tuple[str, ...] = (
+    "Http404",
+    "PermissionDenied",
+    "ValidationError",
+    "SuspiciousOperation",
+    "BadRequest",
+    "DisallowedHost",
+    "DisallowedRedirect",
+    "RequestDataTooBig",
+    "TooManyFieldsSent",
+    "AuthenticationFailed",
+    "NotAuthenticated",
+    "Throttled",
+    "MethodNotAllowed",
+    "NotAcceptable",
+    "UnsupportedMediaType",
+    "ParseError",
+)
+
+# High severity: infrastructure/data failures
+_HIGH_SEVERITY_EXCEPTIONS: tuple[str, ...] = (
+    "DatabaseError",
+    "OperationalError",
+    "IntegrityError",
+    "ConnectionError",
+    "ConnectionRefusedError",
+    "ConnectionResetError",
+    "TimeoutError",
+    "OSError",
+    "IOError",
+    "PermissionError",
+    "FileNotFoundError",
+)
+
+
+def classify_exception(
+    exc: BaseException,
+) -> tuple[str, str]:
+    """Return (level, severity) for an exception.
+
+    Walks the MRO so subclasses of known types are classified
+    correctly (e.g. IntegrityError inherits DatabaseError).
+    """
+    names = {cls.__name__ for cls in type(exc).__mro__}
+
+    # Critical system errors
+    if names & set(_CRITICAL_EXCEPTIONS):
+        return Level.CRITICAL, Severity.CRITICAL
+
+    # Client/validation errors → warning + low/moderate
+    if names & set(_WARNING_EXCEPTIONS):
+        return Level.WARNING, Severity.LOW
+
+    # Infrastructure errors → error + high
+    if names & set(_HIGH_SEVERITY_EXCEPTIONS):
+        return Level.ERROR, Severity.HIGH
+
+    # Default: error + moderate
+    return Level.ERROR, Severity.MODERATE

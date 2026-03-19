@@ -5,16 +5,23 @@
 [![Django versions](https://img.shields.io/badge/django-5.2%20%7C%206.0-blue.svg)](https://pypi.org/project/django-telegram-notifier/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/ganiyevuz/django-telegram-notifier/blob/main/LICENSE)
 
-Catch unhandled Django exceptions and send formatted error reports to Telegram — like a lightweight Sentry. Includes full traceback as a `.py` file attachment with syntax highlighting, optional database logging, and async support.
+Catch unhandled Django exceptions and send formatted error reports to Telegram — like a lightweight Sentry. Includes full traceback as a `.py` file attachment with syntax highlighting, smart exception classification, optional database logging with a rich admin dashboard, and async support.
 
 ---
 
 ## Features
 
 - **Automatic exception catching** via middleware (sync & async)
+- **Non-blocking** — Telegram API calls run in a background thread, never slowing down your response
+- **Smart exception classification** — auto-assigns level & severity based on exception type
 - **Formatted Telegram messages** with emoji levels, request context, and traceback preview
 - **Full traceback as `.py` file** — Telegram renders Python syntax highlighting
+- **Exception filtering** — ignore specific exceptions, paths, or use custom filter functions
 - **Optional database logging** — store every exception with request details, severity, status
+- **Rich admin dashboard** — stats, charts, action toolbar, prev/next navigation, Monaco editors
+- **Light & dark mode** admin — auto-detects system/Django admin theme
+- **Configurable logger** — use stdlib logging, loguru, structlog, or any custom logger
+- **Celery support** — optionally offload reporting to a Celery task
 - **Decorator** for wrapping individual functions/views
 - **Multi-chat support** — send to multiple Telegram chats
 - **Proxy support** for restricted environments
@@ -79,11 +86,22 @@ TELEGRAM_NOTIFIER = {
     "CHAT_IDS": ["chat-id-1", "chat-id-2"],
 
     # Optional (defaults shown)
-    "ENVIRONMENT": None,         # e.g. "production", "staging" — shown in messages
-    "PROXY": None,               # e.g. "http://proxy:8080"
-    "MESSAGE_MAX_LENGTH": 4000,  # max message length (Telegram limit)
-    "STORE_EXCEPTIONS": False,   # save exceptions to database
-    "CLEANUP_DAYS": 30,          # days to keep exception logs
+    "ENVIRONMENT": None,            # e.g. "production", "staging" — shown in messages
+    "PROXY": None,                  # e.g. "socks5://127.0.0.1:1080"
+    "MESSAGE_MAX_LENGTH": 4000,     # max message length (Telegram limit)
+    "STORE_EXCEPTIONS": False,      # save exceptions to database
+    "CLEANUP_DAYS": 30,             # days to keep exception logs
+
+    # Filtering
+    "IGNORE_EXCEPTIONS": [],        # exception class names to skip
+    "IGNORE_PATHS": [],             # URL path prefixes to skip
+    "FILTER": None,                 # custom callable(exc, request) -> bool
+
+    # Logging
+    "LOGGER": None,                 # custom logger instance (loguru, structlog, etc.)
+
+    # Async / Celery
+    "CELERY_TASK": None,            # Celery task for offloading (see Celery section)
 }
 ```
 
@@ -92,10 +110,79 @@ TELEGRAM_NOTIFIER = {
 | `BOT_TOKEN` | `str` | **required** | Telegram Bot API token |
 | `CHAT_IDS` | `list[str]` | **required** | Telegram chat IDs to send notifications to |
 | `ENVIRONMENT` | `str \| None` | `None` | Environment name shown in messages (e.g. `"production"`) |
-| `PROXY` | `str \| None` | `None` | HTTP proxy URL for Telegram API requests |
+| `PROXY` | `str \| None` | `None` | Proxy URL for Telegram API requests |
 | `MESSAGE_MAX_LENGTH` | `int` | `4000` | Maximum message length before truncation |
 | `STORE_EXCEPTIONS` | `bool` | `False` | Save exceptions to `ExceptionLog` model |
 | `CLEANUP_DAYS` | `int` | `30` | Days to keep exception logs (used by cleanup command) |
+| `IGNORE_EXCEPTIONS` | `list[str]` | `[]` | Exception class names to skip (checks MRO) |
+| `IGNORE_PATHS` | `list[str]` | `[]` | URL path prefixes to skip |
+| `FILTER` | `callable \| None` | `None` | Custom filter function `(exc, request) -> bool` |
+| `LOGGER` | `object \| None` | `None` | Custom logger instance (any object with `.info()`, `.error()`) |
+| `CELERY_TASK` | `Task \| None` | `None` | Celery task to offload reporting (see below) |
+
+---
+
+## Exception Filtering
+
+Control which exceptions get reported with three layers of filtering:
+
+### Ignore by exception class
+
+```python
+TELEGRAM_NOTIFIER = {
+    # ...
+    "IGNORE_EXCEPTIONS": [
+        "Http404",
+        "PermissionDenied",
+        "DisallowedHost",
+        "Throttled",
+    ],
+}
+```
+
+This checks the exception's MRO, so `"DatabaseError"` also catches `IntegrityError`, `OperationalError`, etc.
+
+### Ignore by path
+
+```python
+TELEGRAM_NOTIFIER = {
+    # ...
+    "IGNORE_PATHS": [
+        "/health",
+        "/favicon.ico",
+        "/.well-known",
+    ],
+}
+```
+
+### Custom filter function
+
+```python
+TELEGRAM_NOTIFIER = {
+    # ...
+    "FILTER": lambda exc, request: (
+        # Only report in production
+        not getattr(request, 'path', '').startswith('/admin/')
+    ),
+}
+```
+
+Return `True` to report, `False` to skip. Filters are evaluated in order: `IGNORE_EXCEPTIONS` -> `IGNORE_PATHS` -> `FILTER`.
+
+---
+
+## Smart Exception Classification
+
+Exceptions are automatically classified by level and severity based on their type:
+
+| Category | Level | Severity | Examples |
+|----------|-------|----------|----------|
+| System failures | `critical` | `critical` | `MemoryError`, `RecursionError`, `SystemExit` |
+| Infrastructure | `error` | `high` | `DatabaseError`, `ConnectionError`, `TimeoutError` |
+| Client/validation | `warning` | `low` | `Http404`, `ValidationError`, `PermissionDenied`, `Throttled` |
+| Default (bugs) | `error` | `moderate` | `TypeError`, `KeyError`, `AttributeError` |
+
+You can override auto-classification by passing explicit `level` and `severity` to `report_exception()`.
 
 ---
 
@@ -157,8 +244,71 @@ except Exception as exc:
 | `exc` | `Exception` | **required** | The exception to report |
 | `request` | `HttpRequest \| None` | `None` | Django request (adds path, method, body, user) |
 | `body` | `bytes \| None` | `None` | Request body |
-| `level` | `str \| None` | `"error"` | `"debug"`, `"info"`, `"warning"`, `"error"`, `"critical"` |
-| `severity` | `str \| None` | `None` | `"low"`, `"moderate"`, `"high"`, `"critical"` |
+| `level` | `str \| None` | auto | Overrides auto-classification |
+| `severity` | `str \| None` | auto | Overrides auto-classification |
+
+---
+
+## Custom Logger
+
+By default, the package uses Python's stdlib `logging`. You can plug in any logger:
+
+```python
+# loguru
+from loguru import logger
+TELEGRAM_NOTIFIER = { ..., "LOGGER": logger }
+
+# structlog
+import structlog
+TELEGRAM_NOTIFIER = { ..., "LOGGER": structlog.get_logger() }
+
+# silent (disable all logging)
+TELEGRAM_NOTIFIER = { ..., "LOGGER": None }
+```
+
+Any object with `.info()` and `.error()` methods works.
+
+---
+
+## Non-Blocking & Celery
+
+By default, all Telegram API calls and database writes run in a **background daemon thread** — your request response is never delayed by slow network or Telegram downtime.
+
+For projects using Celery, you can offload reporting to a Celery task instead:
+
+```python
+# tasks.py
+from celery import shared_task
+from telegram_notifier.report import _do_report
+
+@shared_task
+def send_telegram_report(
+    exc_class_name, exc_message, message,
+    traceback_content, level, severity, request_data,
+):
+    _do_report(
+        exc_class_name=exc_class_name,
+        exc_message=exc_message,
+        message=message,
+        traceback_content=traceback_content,
+        effective_level=level,
+        effective_severity=severity,
+        request_data=request_data,
+        body=None,
+    )
+```
+
+```python
+# settings.py
+from myapp.tasks import send_telegram_report
+
+TELEGRAM_NOTIFIER = {
+    # ...
+    "CELERY_TASK": send_telegram_report,
+}
+```
+
+When `CELERY_TASK` is set, reporting is dispatched via `.delay()` instead of a thread — giving you retries, monitoring, and rate limiting through your existing Celery infrastructure.
 
 ---
 
@@ -189,9 +339,29 @@ The attached `.py` file contains the **complete traceback** with Python syntax h
 
 ---
 
-## Database Logging
+## Database Logging & Admin Dashboard
 
 Enable with `"STORE_EXCEPTIONS": True`. This creates an `ExceptionLog` entry for every reported exception.
+
+### Admin List View
+
+- **Summary stats** — exceptions in last 24h/7d, by level, unresolved count
+- **Charts** — exceptions timeline (24h bar chart) and level breakdown (doughnut)
+- **Colored badges** — level, severity, method, environment, status
+- **Inline status editing** — change status directly from the list
+- **Bulk actions** — Mark as Resolved, Mark as Ignored, Mark as Seen, Resend to Telegram
+- **Date hierarchy** — quick date navigation
+- **Filters** — by level, severity, status, sent, environment, method, date
+
+### Admin Detail View
+
+- **Action toolbar** — Resolve, Seen, Ignore, Resend to Telegram (AJAX, no reload)
+- **Occurrence stats** — how many times this exception occurred in 24h/7d/total
+- **Prev/Next navigation** — browse exceptions chronologically
+- **Monaco editors** — syntax-highlighted traceback (Python), headers/body/params (JSON)
+- **Copy/Format/Minify buttons** — on all JSON sections with tooltip feedback
+- **Collapsible headers section**
+- **Light & dark mode** — auto-detects Django admin theme and system preference
 
 ### ExceptionLog Fields
 
@@ -253,18 +423,33 @@ Schedule with cron for automatic cleanup:
 
 ---
 
-## When to Use
+## Public API
 
-| Scenario | Recommendation |
-|----------|----------------|
-| Small/medium project, want instant error alerts | **Use this** |
-| Need error notifications in Telegram groups | **Use this** |
-| Want a lightweight alternative to Sentry | **Use this** |
-| Team already uses Telegram for communication | **Use this** |
-| Need detailed error analytics and dashboards | Use Sentry instead |
-| Processing thousands of errors per minute | Use Sentry instead |
+```python
+from telegram_notifier import (
+    # Core
+    report_exception,              # Report an exception manually
+    notify_error_via_telegram,     # Send raw message to Telegram
+    classify_exception,            # Get (level, severity) for an exception
+
+    # Message building
+    build_exception_message,       # Build formatted HTML message
+    build_traceback_content,       # Get full traceback string
+
+    # Middleware & decorator
+    GlobalExceptionReporterMiddleware,
+    telegram_exception_notifier,
+
+    # Models & choices
+    ExceptionLog,                  # Database model (lazy-loaded)
+    Level,                         # debug, info, warning, error, critical
+    Severity,                      # low, moderate, high, critical
+    Status,                        # new, seen, resolved, ignored
+)
+```
 
 ---
+
 
 ## Requirements
 

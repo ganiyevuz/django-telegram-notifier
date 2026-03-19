@@ -4,8 +4,9 @@ from telegram_notifier.decorators import telegram_exception_notifier
 from telegram_notifier.message import build_exception_message, build_traceback_content
 from telegram_notifier.middleware import GlobalExceptionReporterMiddleware
 from telegram_notifier.report import report_exception
+from telegram_notifier.utils import classify_exception
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 
 def __getattr__(name: str) -> type:
@@ -28,4 +29,5 @@ __all__ = [
     "Severity",
     "Status",
     "report_exception",
+    "classify_exception",
 ]

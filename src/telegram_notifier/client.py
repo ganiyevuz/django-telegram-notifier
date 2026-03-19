@@ -1,14 +1,11 @@
 from __future__ import annotations
 
 import io
-import logging
 from datetime import datetime
 
 import httpx
 
-from telegram_notifier.settings import get_setting
-
-logger = logging.getLogger("telegram_notifier")
+from telegram_notifier.settings import get_logger, get_setting
 
 TELEGRAM_SEND_MESSAGE_URL = "https://api.telegram.org/bot{token}/sendMessage"
 TELEGRAM_SEND_DOCUMENT_URL = "https://api.telegram.org/bot{token}/sendDocument"
@@ -24,6 +21,7 @@ def notify_error_via_telegram(
     chat_ids: list[str] = get_setting("CHAT_IDS")
     proxy: str | None = get_setting("PROXY")
     max_length: int = get_setting("MESSAGE_MAX_LENGTH")
+    logger = get_logger()
     success = True
 
     for chat_id in chat_ids:
