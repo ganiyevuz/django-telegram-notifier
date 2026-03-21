@@ -3,70 +3,78 @@
 
 {% block extrahead %}
     {{ block.super }}
-    <script>
-    (() => {
-        const html = document.documentElement;
-        const isDark = () => {
-            const theme = html.getAttribute('data-theme');
-            if (theme) return theme === 'dark';
-            return matchMedia('(prefers-color-scheme: dark)').matches;
-        };
-        const apply = () => html.classList.toggle('dark', isDark());
-        apply();
-        new MutationObserver(apply).observe(html, { attributes: true, attributeFilter: ['data-theme'] });
-        matchMedia('(prefers-color-scheme: dark)').addEventListener('change', apply);
-    })();
-    </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>tailwind.config = { darkMode: 'class' }</script>
     <style>
         .exception-detail {
             max-width: 95%;
             margin: 0 auto;
             overflow: hidden;
+            color: #111827;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
-        .exception-detail table {
-            table-layout: fixed;
-            width: 100%;
-        }
-        .exception-detail table td {
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .monaco-section {
-            border-radius: 8px;
-            overflow: hidden;
-        }
-        .editor-btn {
-            padding: 4px 12px;
-            font-size: 13px;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            background: #f3f4f6;
-            color: #4b5563;
-            transition: background 0.15s;
-        }
+        .tn-nav-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+        .tn-time { font-size: 0.875rem; color: #6b7280; }
+        .tn-header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 16px; }
+        .tn-level-icon { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; font-size: 1.25rem; flex-shrink: 0; }
+        .tn-level-icon--error { background: #fee2e2; color: #dc2626; }
+        .tn-level-icon--warning { background: #fef9c3; color: #ca8a04; }
+        .tn-level-icon--info { background: #dbeafe; color: #2563eb; }
+        .tn-header-text { min-width: 0; flex: 1; }
+        .tn-header-text h2 { font-size: 1.5rem; font-weight: 700; color: #1f2937; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 0; }
+        .tn-subtitle { color: #6b7280; font-size: 0.875rem; margin: 2px 0 0; }
+        .tn-badges { display: flex; flex-wrap: wrap; gap: 8px; }
+        .tn-badge { display: inline-block; padding: 4px 12px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
+        .tn-badge--critical { background: #fee2e2; color: #b91c1c; }
+        .tn-badge--high { background: #ffedd5; color: #c2410c; }
+        .tn-badge--moderate { background: #fef9c3; color: #a16207; }
+        .tn-badge--low { background: #f3f4f6; color: #4b5563; }
+        .tn-badge--status-new { background: #dbeafe; color: #1d4ed8; }
+        .tn-badge--status-seen { background: #ede9fe; color: #6d28d9; }
+        .tn-badge--status-resolved { background: #dcfce7; color: #15803d; }
+        .tn-badge--status-ignored { background: #f3f4f6; color: #4b5563; }
+        .tn-badge--sent { background: #dcfce7; color: #15803d; }
+        .tn-badge--not-sent { background: #fee2e2; color: #b91c1c; }
+        .tn-occurrence { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-bottom: 16px; padding: 0 4px; }
+        .tn-occurrence a { font-size: 0.875rem; color: #6b7280; text-decoration: none; transition: color 0.15s; }
+        .tn-occurrence a:hover { color: #2563eb; }
+        .tn-occurrence .tn-stat-value { font-weight: 600; color: #374151; }
+        .tn-actions-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 24px; padding: 12px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; }
+        .tn-actions-label { font-size: 0.75rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-right: 4px; }
+        .tn-divider { width: 1px; height: 24px; background: #d1d5db; margin: 0 4px; }
+        #action-feedback { font-size: 0.875rem; font-weight: 500; margin-left: 8px; }
+        .tn-error-box { background: #fef2f2; border-left: 4px solid #f87171; padding: 16px; border-radius: 0 8px 8px 0; margin-bottom: 24px; }
+        .tn-error-box p { color: #991b1b; font-family: monospace; font-size: 0.875rem; word-break: break-all; margin: 0; }
+        .tn-info-grid { display: grid; grid-template-columns: 1fr; gap: 24px; margin-bottom: 24px; }
+        @media (min-width: 1024px) { .tn-info-grid { grid-template-columns: 1fr 1fr; } }
+        .tn-card { background: #fff; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px rgba(0,0,0,0.05); border-radius: 12px; padding: 20px; }
+        .tn-card-mb { margin-bottom: 24px; }
+        .tn-card h3 { font-size: 1.125rem; font-weight: 600; color: #374151; margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
+        .tn-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        .tn-card-header h3 { margin-bottom: 0; }
+        .tn-btn-group { display: flex; gap: 4px; }
+        .tn-icon-blue { color: #3b82f6; }
+        .tn-icon-purple { color: #a855f7; }
+        .tn-icon-red { color: #ef4444; }
+        .tn-card table { table-layout: fixed; width: 100%; font-size: 0.875rem; border-collapse: collapse; }
+        .tn-card table td { overflow: hidden; text-overflow: ellipsis; padding: 8px 0; color: #111827; }
+        .tn-card table tr { border-bottom: 1px solid #f3f4f6; }
+        .tn-card table tr:last-child { border-bottom: none; }
+        .tn-label { font-weight: 500; color: #6b7280 !important; width: 33.333%; }
+        .tn-mono { font-family: monospace; font-size: 0.875rem; }
+        .tn-break { word-break: break-all; }
+        .tn-method-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; }
+        .tn-method-badge--get { background: #dcfce7; color: #15803d; }
+        .tn-method-badge--post { background: #dbeafe; color: #1d4ed8; }
+        .tn-method-badge--put { background: #fef9c3; color: #a16207; }
+        .tn-method-badge--delete { background: #fee2e2; color: #b91c1c; }
+        .tn-method-badge--default { background: #f3f4f6; color: #374151; }
+        .tn-env-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+        .tn-env-badge--production { background: #fee2e2; color: #b91c1c; }
+        .tn-env-badge--other { background: #dcfce7; color: #15803d; }
+        .monaco-section { border-radius: 8px; overflow: hidden; }
+        .editor-btn { padding: 4px 12px; font-size: 13px; border-radius: 8px; border: none; cursor: pointer; background: #f3f4f6; color: #4b5563; transition: background 0.15s; }
         .editor-btn:hover { background: #e5e7eb; }
-        .dark .editor-btn { background: #374151; color: #d1d5db; }
-        .dark .editor-btn:hover { background: #4b5563; }
-        .action-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 14px;
-            font-size: 13px;
-            font-weight: 500;
-            border-radius: 8px;
-            border: 1px solid;
-            cursor: pointer;
-            transition: all 0.15s;
-            text-decoration: none !important;
-        }
-        .action-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
+        .action-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: 13px; font-weight: 500; border-radius: 8px; border: 1px solid; cursor: pointer; transition: all 0.15s; text-decoration: none !important; }
+        .action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .action-btn--resolve { border-color: #16a34a; color: #16a34a; background: transparent; }
         .action-btn--resolve:hover { background: #16a34a; color: #fff; }
         .action-btn--ignore { border-color: #9ca3af; color: #6b7280; background: transparent; }
@@ -75,59 +83,18 @@
         .action-btn--seen:hover { background: #7c3aed; color: #fff; }
         .action-btn--resend { border-color: #2563eb; color: #2563eb; background: transparent; }
         .action-btn--resend:hover { background: #2563eb; color: #fff; }
-        .dark .action-btn--resolve { border-color: #4ade80; color: #4ade80; }
-        .dark .action-btn--resolve:hover { background: #16a34a; color: #fff; }
-        .dark .action-btn--ignore { border-color: #9ca3af; color: #9ca3af; }
-        .dark .action-btn--ignore:hover { background: #6b7280; color: #fff; }
-        .dark .action-btn--seen { border-color: #a78bfa; color: #a78bfa; }
-        .dark .action-btn--seen:hover { background: #7c3aed; color: #fff; }
-        .dark .action-btn--resend { border-color: #60a5fa; color: #60a5fa; }
-        .dark .action-btn--resend:hover { background: #2563eb; color: #fff; }
-        .nav-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 16px;
-            font-size: 13px;
-            font-weight: 500;
-            border-radius: 8px;
-            text-decoration: none !important;
-            border: 1px solid #d1d5db;
-            background: #fff;
-            color: #374151 !important;
-            transition: all 0.15s;
-        }
+        .action-btn svg { width: 14px; height: 14px; }
+        .nav-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; font-size: 13px; font-weight: 500; border-radius: 8px; text-decoration: none !important; border: 1px solid #d1d5db; background: #fff; color: #374151 !important; transition: all 0.15s; }
         .nav-btn:hover { background: #f3f4f6; border-color: #9ca3af; }
         .nav-btn--disabled { opacity: 0.35; pointer-events: none; }
-        .dark .nav-btn { background: #1f2937; border-color: #4b5563; color: #d1d5db !important; }
-        .dark .nav-btn:hover { background: #374151; border-color: #6b7280; }
-        .copy-tooltip {
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            translate: -50% 0;
-            margin-bottom: 6px;
-            padding: 4px 10px;
-            font-size: 12px;
-            font-weight: 500;
-            white-space: nowrap;
-            border-radius: 6px;
-            background: #1f2937;
-            color: #fff;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.15s;
-        }
+        .nav-btn svg { width: 16px; height: 16px; }
+        .copy-tooltip { position: absolute; bottom: 100%; left: 50%; translate: -50% 0; margin-bottom: 6px; padding: 4px 10px; font-size: 12px; font-weight: 500; white-space: nowrap; border-radius: 6px; background: #1f2937; color: #fff; pointer-events: none; opacity: 0; transition: opacity 0.15s; }
         .copy-tooltip.show { opacity: 1; }
-        .copy-tooltip::after {
-            content: '';
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            translate: -50% 0;
-            border: 5px solid transparent;
-            border-top-color: #1f2937;
-        }
+        .copy-tooltip::after { content: ''; position: absolute; top: 100%; left: 50%; translate: -50% 0; border: 5px solid transparent; border-top-color: #1f2937; }
+        .tn-bottom-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 32px; margin-bottom: 16px; }
+        .tn-bottom-nav-right { display: flex; gap: 8px; }
+        .tn-cursor-pointer { cursor: pointer; }
+        .tn-relative { position: relative; }
     </style>
 {% endblock %}
 
@@ -135,168 +102,166 @@
 <div class="exception-detail">
 
     <!-- Prev / Next Navigation -->
-    <div class="flex items-center justify-between mb-4">
+    <div class="tn-nav-row">
         <a href="{% if prev_url %}{{ prev_url }}{% else %}#{% endif %}"
            class="nav-btn {% if not prev_url %}nav-btn--disabled{% endif %}">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
             Newer
         </a>
-        <span class="text-sm text-gray-500 dark:text-gray-400">
+        <span class="tn-time">
             {{ time_ago }}
         </span>
         <a href="{% if next_url %}{{ next_url }}{% else %}#{% endif %}"
            class="nav-btn {% if not next_url %}nav-btn--disabled{% endif %}">
             Older
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
         </a>
     </div>
 
     <!-- Header -->
-    <div class="flex flex-wrap items-center gap-3 mb-4">
+    <div class="tn-header">
         {% if original.level == "critical" or original.level == "error" %}
-            <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 text-xl shrink-0">
+            <span class="tn-level-icon tn-level-icon--error">
                 {% if original.level == "critical" %}&#9940;{% else %}&#128308;{% endif %}
             </span>
         {% elif original.level == "warning" %}
-            <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400 text-xl shrink-0">&#128993;</span>
+            <span class="tn-level-icon tn-level-icon--warning">&#128993;</span>
         {% else %}
-            <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-xl shrink-0">&#128309;</span>
+            <span class="tn-level-icon tn-level-icon--info">&#128309;</span>
         {% endif %}
-        <div class="min-w-0 flex-1">
-            <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 truncate">{{ original.exception_class }}</h2>
-            <p class="text-gray-500 dark:text-gray-400 text-sm">{{ original.created_at|date:"Y-m-d H:i:s" }} &middot; {{ original.environment|default:"unknown" }}</p>
+        <div class="tn-header-text">
+            <h2>{{ original.exception_class }}</h2>
+            <p class="tn-subtitle">{{ original.created_at|date:"Y-m-d H:i:s" }} &middot; {{ original.environment|default:"unknown" }}</p>
         </div>
-        <div class="flex flex-wrap gap-2">
-            <span class="px-3 py-1 rounded-full text-xs font-semibold
-                {% if original.severity == 'critical' %}bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300
-                {% elif original.severity == 'high' %}bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300
-                {% elif original.severity == 'moderate' %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300
-                {% else %}bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+        <div class="tn-badges">
+            <span class="tn-badge
+                {% if original.severity == 'critical' %}tn-badge--critical
+                {% elif original.severity == 'high' %}tn-badge--high
+                {% elif original.severity == 'moderate' %}tn-badge--moderate
+                {% else %}tn-badge--low{% endif %}">
                 {{ original.severity|upper }}
             </span>
-            <span id="status-badge" class="px-3 py-1 rounded-full text-xs font-semibold
-                {% if original.status == 'new' %}bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300
-                {% elif original.status == 'seen' %}bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300
-                {% elif original.status == 'resolved' %}bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300
-                {% else %}bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+            <span id="status-badge" class="tn-badge
+                {% if original.status == 'new' %}tn-badge--status-new
+                {% elif original.status == 'seen' %}tn-badge--status-seen
+                {% elif original.status == 'resolved' %}tn-badge--status-resolved
+                {% else %}tn-badge--status-ignored{% endif %}">
                 {{ original.status|upper }}
             </span>
-            <span id="sent-badge" class="px-3 py-1 rounded-full text-xs font-semibold
-                {% if original.is_sent %}bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300{% else %}bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300{% endif %}">
+            <span id="sent-badge" class="tn-badge
+                {% if original.is_sent %}tn-badge--sent{% else %}tn-badge--not-sent{% endif %}">
                 {% if original.is_sent %}Sent to Telegram{% else %}Not Sent{% endif %}
             </span>
         </div>
     </div>
 
     <!-- Occurrence Stats -->
-    <div class="flex flex-wrap items-center gap-4 mb-4 px-1">
-        <a href="../?exception_class={{ original.exception_class|urlencode }}"
-           class="text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition"
-           style="text-decoration:none">
-            <span class="font-semibold text-gray-700 dark:text-gray-200">{{ occurrence_24h }}</span> in 24h
+    <div class="tn-occurrence">
+        <a href="../?exception_class={{ original.exception_class|urlencode }}">
+            <span class="tn-stat-value">{{ occurrence_24h }}</span> in 24h
             &middot;
-            <span class="font-semibold text-gray-700 dark:text-gray-200">{{ occurrence_7d }}</span> in 7d
+            <span class="tn-stat-value">{{ occurrence_7d }}</span> in 7d
             &middot;
-            <span class="font-semibold text-gray-700 dark:text-gray-200">{{ occurrence_total }}</span> total
+            <span class="tn-stat-value">{{ occurrence_total }}</span> total
         </a>
     </div>
 
     <!-- Action Toolbar -->
-    <div class="flex flex-wrap items-center gap-2 mb-6 p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl">
-        <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mr-1">Actions</span>
+    <div class="tn-actions-bar">
+        <span class="tn-actions-label">Actions</span>
         <button class="action-btn action-btn--resolve" data-action="resolved">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
             Resolve
         </button>
         <button class="action-btn action-btn--seen" data-action="seen">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
             Mark Seen
         </button>
         <button class="action-btn action-btn--ignore" data-action="ignored">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636"/></svg>
             Ignore
         </button>
-        <span class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></span>
+        <span class="tn-divider"></span>
         <button class="action-btn action-btn--resend" data-action="resend">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
             Resend to Telegram
         </button>
-        <span id="action-feedback" class="text-sm font-medium ml-2" style="display:none"></span>
+        <span id="action-feedback" style="display:none"></span>
     </div>
 
     <!-- Error Message -->
-    <div class="bg-red-50 dark:bg-red-900/30 border-l-4 border-red-400 dark:border-red-600 p-4 rounded-r-lg mb-6">
-        <p class="text-red-800 dark:text-red-200 font-mono text-sm break-all">{{ original.message }}</p>
+    <div class="tn-error-box">
+        <p>{{ original.message }}</p>
     </div>
 
     <!-- Grid: Request + Server Info -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm dark:shadow-gray-900/50 rounded-xl p-5">
-            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
-                <span class="text-blue-500 dark:text-blue-400">&#128463;</span> Request
+    <div class="tn-info-grid">
+        <div class="tn-card">
+            <h3>
+                <span class="tn-icon-blue">&#128463;</span> Request
             </h3>
-            <table class="w-full text-sm">
+            <table>
                 <tbody>
-                    <tr class="border-b border-gray-100 dark:border-gray-700">
-                        <td class="py-2 font-medium text-gray-500 dark:text-gray-400 w-1/3">Method</td>
-                        <td class="py-2">
-                            <span class="px-2 py-0.5 rounded text-xs font-bold
-                                {% if original.method == 'GET' %}bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300
-                                {% elif original.method == 'POST' %}bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300
-                                {% elif original.method == 'PUT' or original.method == 'PATCH' %}bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300
-                                {% elif original.method == 'DELETE' %}bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300
-                                {% else %}bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+                    <tr>
+                        <td class="tn-label">Method</td>
+                        <td>
+                            <span class="tn-method-badge
+                                {% if original.method == 'GET' %}tn-method-badge--get
+                                {% elif original.method == 'POST' %}tn-method-badge--post
+                                {% elif original.method == 'PUT' or original.method == 'PATCH' %}tn-method-badge--put
+                                {% elif original.method == 'DELETE' %}tn-method-badge--delete
+                                {% else %}tn-method-badge--default{% endif %}">
                                 {{ original.method|default:"-" }}
                             </span>
                         </td>
                     </tr>
-                    <tr class="border-b border-gray-100 dark:border-gray-700">
-                        <td class="py-2 font-medium text-gray-500 dark:text-gray-400">Path</td>
-                        <td class="py-2 font-mono text-sm text-gray-900 dark:text-gray-100 break-all">{{ original.path|default:"-" }}</td>
-                    </tr>
-                    <tr class="border-b border-gray-100 dark:border-gray-700">
-                        <td class="py-2 font-medium text-gray-500 dark:text-gray-400">User</td>
-                        <td class="py-2 text-gray-900 dark:text-gray-100">{{ original.user_info|default:"-" }}</td>
-                    </tr>
-                    <tr class="border-b border-gray-100 dark:border-gray-700">
-                        <td class="py-2 font-medium text-gray-500 dark:text-gray-400">IP Address</td>
-                        <td class="py-2 font-mono text-gray-900 dark:text-gray-100">{{ original.ip_address|default:"-" }}</td>
+                    <tr>
+                        <td class="tn-label">Path</td>
+                        <td class="tn-mono tn-break">{{ original.path|default:"-" }}</td>
                     </tr>
                     <tr>
-                        <td class="py-2 font-medium text-gray-500 dark:text-gray-400">View</td>
-                        <td class="py-2 font-mono text-sm text-gray-900 dark:text-gray-100 break-all">{{ original.view_name|default:"-" }}</td>
+                        <td class="tn-label">User</td>
+                        <td>{{ original.user_info|default:"-" }}</td>
+                    </tr>
+                    <tr>
+                        <td class="tn-label">IP Address</td>
+                        <td class="tn-mono">{{ original.ip_address|default:"-" }}</td>
+                    </tr>
+                    <tr>
+                        <td class="tn-label">View</td>
+                        <td class="tn-mono tn-break">{{ original.view_name|default:"-" }}</td>
                     </tr>
                 </tbody>
             </table>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm dark:shadow-gray-900/50 rounded-xl p-5">
-            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
-                <span class="text-purple-500 dark:text-purple-400">&#128421;</span> Server
+        <div class="tn-card">
+            <h3>
+                <span class="tn-icon-purple">&#128421;</span> Server
             </h3>
-            <table class="w-full text-sm">
+            <table>
                 <tbody>
-                    <tr class="border-b border-gray-100 dark:border-gray-700">
-                        <td class="py-2 font-medium text-gray-500 dark:text-gray-400 w-1/3">Hostname</td>
-                        <td class="py-2 font-mono text-gray-900 dark:text-gray-100">{{ original.hostname|default:"-" }}</td>
+                    <tr>
+                        <td class="tn-label">Hostname</td>
+                        <td class="tn-mono">{{ original.hostname|default:"-" }}</td>
                     </tr>
-                    <tr class="border-b border-gray-100 dark:border-gray-700">
-                        <td class="py-2 font-medium text-gray-500 dark:text-gray-400">Environment</td>
-                        <td class="py-2">
-                            <span class="px-2 py-0.5 rounded text-xs font-semibold
-                                {% if original.environment == 'production' %}bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300
-                                {% else %}bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300{% endif %}">
+                    <tr>
+                        <td class="tn-label">Environment</td>
+                        <td>
+                            <span class="tn-env-badge
+                                {% if original.environment == 'production' %}tn-env-badge--production
+                                {% else %}tn-env-badge--other{% endif %}">
                                 {{ original.environment|default:"unknown" }}
                             </span>
                         </td>
                     </tr>
-                    <tr class="border-b border-gray-100 dark:border-gray-700">
-                        <td class="py-2 font-medium text-gray-500 dark:text-gray-400">Level</td>
-                        <td class="py-2 text-gray-900 dark:text-gray-100">{{ original.level|upper }}</td>
+                    <tr>
+                        <td class="tn-label">Level</td>
+                        <td>{{ original.level|upper }}</td>
                     </tr>
                     <tr>
-                        <td class="py-2 font-medium text-gray-500 dark:text-gray-400">Timestamp</td>
-                        <td class="py-2 text-gray-900 dark:text-gray-100">{{ original.created_at|date:"Y-m-d H:i:s T" }}</td>
+                        <td class="tn-label">Timestamp</td>
+                        <td>{{ original.created_at|date:"Y-m-d H:i:s T" }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -305,13 +270,13 @@
 
     <!-- Query Params -->
     {% if original.query_params %}
-    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm dark:shadow-gray-900/50 rounded-xl p-5 mb-6">
-        <div class="flex items-center justify-between mb-3">
-            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200">Query Parameters</h3>
-            <div class="flex gap-1">
-                <button id="mc-query-params-copy" class="editor-btn relative">Copy</button>
-                <button id="mc-query-params-fmt" class="editor-btn relative">Format</button>
-                <button id="mc-query-params-min" class="editor-btn relative">Minify</button>
+    <div class="tn-card tn-card-mb">
+        <div class="tn-card-header">
+            <h3>Query Parameters</h3>
+            <div class="tn-btn-group">
+                <button id="mc-query-params-copy" class="editor-btn tn-relative">Copy</button>
+                <button id="mc-query-params-fmt" class="editor-btn tn-relative">Format</button>
+                <button id="mc-query-params-min" class="editor-btn tn-relative">Minify</button>
             </div>
         </div>
         <div class="monaco-section" id="mc-query-params" style="height:200px;"></div>
@@ -320,13 +285,13 @@
 
     <!-- Request Body -->
     {% if original.body %}
-    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm dark:shadow-gray-900/50 rounded-xl p-5 mb-6">
-        <div class="flex items-center justify-between mb-3">
-            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200">Request Body</h3>
-            <div class="flex gap-1">
-                <button id="mc-body-copy" class="editor-btn relative">Copy</button>
-                <button id="mc-body-fmt" class="editor-btn relative">Format</button>
-                <button id="mc-body-min" class="editor-btn relative">Minify</button>
+    <div class="tn-card tn-card-mb">
+        <div class="tn-card-header">
+            <h3>Request Body</h3>
+            <div class="tn-btn-group">
+                <button id="mc-body-copy" class="editor-btn tn-relative">Copy</button>
+                <button id="mc-body-fmt" class="editor-btn tn-relative">Format</button>
+                <button id="mc-body-min" class="editor-btn tn-relative">Minify</button>
             </div>
         </div>
         <div class="monaco-section" id="mc-body" style="height:250px;"></div>
@@ -335,15 +300,15 @@
 
     <!-- Headers -->
     {% if original.headers %}
-    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm dark:shadow-gray-900/50 rounded-xl p-5 mb-6">
-        <div class="flex items-center justify-between mb-3">
-            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 cursor-pointer" id="headers-toggle">
+    <div class="tn-card tn-card-mb">
+        <div class="tn-card-header">
+            <h3 class="tn-cursor-pointer" id="headers-toggle">
                 <span id="headers-arrow">&#9660;</span> Request Headers
             </h3>
-            <div class="flex gap-1">
-                <button id="mc-headers-copy" class="editor-btn relative">Copy</button>
-                <button id="mc-headers-fmt" class="editor-btn relative">Format</button>
-                <button id="mc-headers-min" class="editor-btn relative">Minify</button>
+            <div class="tn-btn-group">
+                <button id="mc-headers-copy" class="editor-btn tn-relative">Copy</button>
+                <button id="mc-headers-fmt" class="editor-btn tn-relative">Format</button>
+                <button id="mc-headers-min" class="editor-btn tn-relative">Minify</button>
             </div>
         </div>
         <div class="monaco-section" id="mc-headers" style="height:300px;"></div>
@@ -351,34 +316,34 @@
     {% endif %}
 
     <!-- Traceback -->
-    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm dark:shadow-gray-900/50 rounded-xl p-5 mb-6">
-        <div class="flex items-center justify-between mb-3">
-            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
-                <span class="text-red-500 dark:text-red-400">&#128027;</span> Traceback
+    <div class="tn-card tn-card-mb">
+        <div class="tn-card-header">
+            <h3>
+                <span class="tn-icon-red">&#128027;</span> Traceback
             </h3>
-            <div class="flex gap-1">
-                <button id="mc-traceback-copy" class="editor-btn relative">Copy</button>
+            <div class="tn-btn-group">
+                <button id="mc-traceback-copy" class="editor-btn tn-relative">Copy</button>
             </div>
         </div>
         <div class="monaco-section" id="mc-traceback" style="height:400px;"></div>
     </div>
 
     <!-- Bottom Navigation -->
-    <div class="flex items-center justify-between mt-8 mb-4">
+    <div class="tn-bottom-nav">
         <a href="{{ list_url }}" class="nav-btn">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
             Back to List
         </a>
-        <div class="flex gap-2">
+        <div class="tn-bottom-nav-right">
             <a href="{% if prev_url %}{{ prev_url }}{% else %}#{% endif %}"
                class="nav-btn {% if not prev_url %}nav-btn--disabled{% endif %}">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
                 Newer
             </a>
             <a href="{% if next_url %}{{ next_url }}{% else %}#{% endif %}"
                class="nav-btn {% if not next_url %}nav-btn--disabled{% endif %}">
                 Older
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
             </a>
         </div>
     </div>
@@ -395,11 +360,8 @@
         || '{{ csrf_token }}';
 
     // --- Theme ---
-    const getTheme = () => document.documentElement.classList.contains('dark') ? 'vs-dark' : 'vs';
-
-    new MutationObserver(() => {
-        if (globalThis.monaco) monaco.editor.setTheme(getTheme());
-    }).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    // Monaco editors always use dark theme for readability
+    const MONACO_THEME = 'vs-dark';
 
     // --- Tooltip ---
     const showTooltip = (btn, text) => {
@@ -416,10 +378,10 @@
 
     // --- Action Toolbar ---
     const STATUS_STYLES = {
-        new: ['bg-blue-100', 'text-blue-700', 'dark:bg-blue-900/50', 'dark:text-blue-300'],
-        seen: ['bg-purple-100', 'text-purple-700', 'dark:bg-purple-900/50', 'dark:text-purple-300'],
-        resolved: ['bg-green-100', 'text-green-700', 'dark:bg-green-900/50', 'dark:text-green-300'],
-        ignored: ['bg-gray-100', 'text-gray-600', 'dark:bg-gray-700', 'dark:text-gray-300'],
+        new: 'tn-badge--status-new',
+        seen: 'tn-badge--status-seen',
+        resolved: 'tn-badge--status-resolved',
+        ignored: 'tn-badge--status-ignored',
     };
 
     const feedback = document.getElementById('action-feedback');
@@ -435,17 +397,14 @@
 
     const updateStatusBadge = (status) => {
         // Remove all status classes
-        Object.values(STATUS_STYLES).flat().forEach(c => statusBadge.classList.remove(c));
-        // Add new ones
-        (STATUS_STYLES[status] || []).forEach(c => statusBadge.classList.add(c));
+        Object.values(STATUS_STYLES).forEach(c => statusBadge.classList.remove(c));
+        // Add new one
+        if (STATUS_STYLES[status]) statusBadge.classList.add(STATUS_STYLES[status]);
         statusBadge.textContent = status.toUpperCase();
     };
 
     const updateSentBadge = (sent) => {
-        sentBadge.className = 'px-3 py-1 rounded-full text-xs font-semibold ' +
-            (sent
-                ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300'
-                : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300');
+        sentBadge.className = 'tn-badge ' + (sent ? 'tn-badge--sent' : 'tn-badge--not-sent');
         sentBadge.textContent = sent ? 'Sent to Telegram' : 'Not Sent';
     };
 
@@ -500,7 +459,7 @@
         const editor = monaco.editor.create(el, {
             value: content,
             language,
-            theme: getTheme(),
+            theme: MONACO_THEME,
             readOnly: true,
             minimap: { enabled: false },
             fontSize: 13,
@@ -543,7 +502,7 @@
     const arrow = document.getElementById('headers-arrow');
     if (toggle) {
         toggle.addEventListener('click', () => {
-            const section = toggle.closest('.rounded-xl').querySelector('.monaco-section');
+            const section = toggle.closest('.tn-card').querySelector('.monaco-section');
             const hidden = section.style.display === 'none';
             section.style.display = hidden ? '' : 'none';
             arrow.textContent = hidden ? '\u25BC' : '\u25B6';

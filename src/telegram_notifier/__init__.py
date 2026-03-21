@@ -6,7 +6,7 @@ from telegram_notifier.middleware import GlobalExceptionReporterMiddleware
 from telegram_notifier.report import report_exception
 from telegram_notifier.utils import classify_exception
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 
 def __getattr__(name: str) -> type:

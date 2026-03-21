@@ -8,6 +8,7 @@
             margin-bottom: 20px;
             max-width: 100%;
             overflow: hidden;
+            color: #111827;
         }
         .tn-stats {
             display: flex;
@@ -130,14 +131,8 @@
 
 <script>
 (() => {
-    const isDark = () => {
-        const theme = document.documentElement.getAttribute('data-theme');
-        if (theme) return theme === 'dark';
-        return matchMedia('(prefers-color-scheme: dark)').matches;
-    };
-
-    const gridColor = () => isDark() ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
-    const textColor = () => isDark() ? '#9ca3af' : '#6b7280';
+    const gridColor = 'rgba(0,0,0,0.08)';
+    const textColor = '#6b7280';
 
     const LEVEL_COLORS = {
         Critical: '#dc2626',
@@ -147,8 +142,8 @@
         Debug: '#9ca3af',
     };
 
-    Chart.defaults.color = textColor();
-    Chart.defaults.borderColor = gridColor();
+    Chart.defaults.color = textColor;
+    Chart.defaults.borderColor = gridColor;
 
     // --- Timeline bar chart ---
     new Chart(document.getElementById('tn-chart-timeline'), {
@@ -158,7 +153,7 @@
             datasets: [{
                 label: 'Exceptions',
                 data: {{ chart_timeline_data|safe }},
-                backgroundColor: isDark() ? 'rgba(239,68,68,0.5)' : 'rgba(239,68,68,0.7)',
+                backgroundColor: 'rgba(239,68,68,0.7)',
                 borderColor: '#ef4444',
                 borderWidth: 1,
                 borderRadius: 3,
@@ -179,7 +174,7 @@
                 y: {
                     beginAtZero: true,
                     ticks: { precision: 0 },
-                    grid: { color: gridColor() },
+                    grid: { color: gridColor },
                 },
             },
         },
@@ -197,8 +192,8 @@
             datasets: [{
                 data: levelData,
                 backgroundColor: levelColors,
-                borderWidth: isDark() ? 0 : 2,
-                borderColor: isDark() ? 'transparent' : '#fff',
+                borderWidth: 2,
+                borderColor: '#fff',
             }],
         },
         options: {

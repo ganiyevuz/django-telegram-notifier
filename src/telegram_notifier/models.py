@@ -52,7 +52,8 @@ class ExceptionLog(Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"{self.exception_class}: {self.message[:50]}"
+        ts = self.created_at.strftime("%Y-%m-%d %H:%M") if self.created_at else ""
+        return f"{self.exception_class} — {ts}"
 
     @classmethod
     def create_from_exception(

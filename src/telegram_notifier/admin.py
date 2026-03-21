@@ -154,17 +154,18 @@ class ExceptionLogAdmin(admin.ModelAdmin):
 
     list_display = (
         "exception_class",
-        "short_message",
         "level_badge",
-        "severity_badge",
-        "status",
+        "short_message",
+        "status_badge",
+        "ago",
         "method_badge",
         "path",
-        "user_info_display",
-        "environment_badge",
         "sent_icon",
-        "ago",
+        "severity_badge",
+        "environment_badge",
+        "user_info_display",
     )
+    list_display_links = ("exception_class",)
     list_filter = (
         "level",
         "severity",
@@ -194,7 +195,6 @@ class ExceptionLogAdmin(admin.ModelAdmin):
         "is_sent",
         "created_at",
     )
-    list_editable = ("status",)
     list_per_page = 50
     ordering = ("-created_at",)
     date_hierarchy = "created_at"
@@ -285,7 +285,7 @@ class ExceptionLogAdmin(admin.ModelAdmin):
     @admin.display(description="User", ordering="user_info")
     def user_info_display(self, obj: ExceptionLog) -> str:
         return obj.user_info or format_html(
-            '<span style="color:#9ca3af">anonymous</span>'
+            '<span style="color:{}">{}</span>', "#9ca3af", "anonymous",
         )
 
     @admin.display(description="Env", ordering="environment")

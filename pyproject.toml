@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "django-telegram-notifier"
-version = "0.2.0"
+version = "0.2.1"
 description = "Catch Django exceptions and send formatted error reports to Telegram with optional database logging"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -41,6 +41,7 @@ Issues = "https://github.com/ganiyevuz/django-telegram-notifier/issues"
 
 [dependency-groups]
 dev = [
+    "django-jazzmin>=3.0.4",
     "pytest>=8.3.5",
     "pytest-asyncio>=1.3.0",
     "pytest-cov>=6.1.1",
